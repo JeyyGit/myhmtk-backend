@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/png" href="https://cdn.jeyy.xyz/image/logo_tk_6e237b.png">
+    <title>MyHMTK - Reset Password</title>
+</head>
+
+<body>
+    <div class="container h-screen w-full flex flex-col justify-center items-center">
+        <img src="https://cdn.jeyy.xyz/image/logo_tk_6e237b.png" alt="logo_tk" class="w-1/2 md:w-1/4">
+        <h1 class="text-center text-3xl font-mono">MyHMTK</h1>
+        <br>
+        <div class="p-3 m-3 border-2 rounded-md md:w-1/3">
+            {% if status == "valid" %}
+            <h3><strong> Change password for {{ data.name }}</strong></h3>
+            <hr>
+            <br>
+            <form action="/reset_password?token={{ data.token }}" method="post" class="flex flex-col">
+                <label for="pass">New Password: </label>
+                <input type="password" name="password" id="pass"
+                    class="border border-gray-300 rounded-md px-4 py-2 w-full focus:outline-none focus:border-blue-500">
+                <button class="self-end bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 my-2 rounded">
+                    Submit
+                </button>
+            </form>
+            {% else %}
+            <h3><strong>{{ status }}</strong></h3>
+            {% endif %}
+        </div>
+    </div>
+</body>
+
+</html>
