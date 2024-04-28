@@ -94,7 +94,9 @@ async def get_fun_tk(admin_id: int):
 
     if not fun_tk:
         return GetFunTKResponse(
-            success=False, message=f"Fun TK dengan id {admin_id} tidak ditemukan", fun_tk=None
+            success=False,
+            message=f"Fun TK dengan id {admin_id} tidak ditemukan",
+            fun_tk=None,
         )
 
     admin = Admin(
@@ -163,7 +165,8 @@ async def update_fun_tk(
         fun_tk = await db.fetchrow("SELECT * FROM fun_tk WHERE id = $1", admin_admin_id)
         if not fun_tk:
             return Response(
-                success=False, message=f"Fun tk dengan id {admin_admin_id} tidak ditemukan"
+                success=False,
+                message=f"Fun tk dengan id {admin_admin_id} tidak ditemukan",
             )
 
         await db.execute(
@@ -176,7 +179,9 @@ async def update_fun_tk(
             admin_admin_id,
         )
 
-    return Response(success=True, message=f"Berhasil menyunting fun tk {admin_admin_id}")
+    return Response(
+        success=True, message=f"Berhasil menyunting fun tk {admin_admin_id}"
+    )
 
 
 @fun_tk_router.delete("/{admin_id}")
@@ -187,7 +192,7 @@ async def delete_fun_tk(admin_id: int):
             return Response(
                 success=False, message=f"Fun tk dengan id {admin_id} tidak ditemukan"
             )
-        
+
         await db.execute("DELETE FROM fun_tk WHERE id = $1", admin_id)
 
     return Response(success=True, message=f"Berhasil menghapus fun tk {admin_id}")

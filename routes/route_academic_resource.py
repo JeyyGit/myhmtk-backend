@@ -156,7 +156,9 @@ async def update_academic_resource(
             admin_id,
         )
 
-    return Response(success=True, message=f"Berhasil menyunting academic resource {admin_id}")
+    return Response(
+        success=True, message=f"Berhasil menyunting academic resource {admin_id}"
+    )
 
 
 @academic_resource_router.delete("{admin_id}", response_model=Response)
@@ -173,4 +175,6 @@ async def delete_academic_resource(admin_id: int):
 
         await db.execute("DELETE FROM academic_resource WHERE id = $1", admin_id)
 
-    return Response(success=True, message=f"Berhasil menghapus academic resource {admin_id}")
+    return Response(
+        success=True, message=f"Berhasil menghapus academic resource {admin_id}"
+    )

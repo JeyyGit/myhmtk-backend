@@ -206,53 +206,68 @@ async def add_order(
             return Response(
                 success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
             )
-        
+
         product = await db.fetchrow("SELECT * FROM product WHERE id = $1", product_id)
         if not product:
             return Response(
                 success=False, message=f"Product dengan id {product_id} tidak ditemukan"
             )
-        
-        await db.execute("""
+
+        await db.execute(
+            """
             INSERT INTO "order"
                 (mahasiswa_nim, product_id, quantity, size, information, order_date, paid, completed)
             VALUES
                 ($1, $2, $3, $4, $5, $6, $7, $8)
-        """, nim, product_id, quantity, size, information, order_date, paid, completed)
+        """,
+            nim,
+            product_id,
+            quantity,
+            size,
+            information,
+            order_date,
+            paid,
+            completed,
+        )
 
         return Response(success=True, message="Berhasil menambahkan order baru")
-    
+
+
 @order_router.put("/{order_id}", response_model=Response)
 async def update_order(
-    order_id: int,
-    paid: Optional[bool] = None,
-    completed: Optional[bool] = None
+    order_id: int, paid: Optional[bool] = None, completed: Optional[bool] = None
 ):
     async with DBSession() as db:
-        order = await db.fetchrow("SELECT * FROM \"order\" WHERE id = $1", order_id)
+        order = await db.fetchrow('SELECT * FROM "order" WHERE id = $1', order_id)
         if not order:
             return Response(
                 success=False, message=f"Order dengan id {order_id} tidak ditemukan"
             )
-        
-        await db.execute("""
+
+        await db.execute(
+            """
             UPDATE "order" SET
                 paid = COALESCE($1, paid),
                 completed = COALESCE($2, completed)
             WHERE id = $3
-        """, paid, completed, order_id)
+        """,
+            paid,
+            completed,
+            order_id,
+        )
 
     return Response(success=True, message=f"Berhasil menyunting order {order_id}")
 
-@order_router.delete('/{order_id}', response_model=Response)
+
+@order_router.delete("/{order_id}", response_model=Response)
 async def delete_order(order_id: int):
     async with DBSession() as db:
-        order = await db.fetchrow("SELECT * FROM \"order\" WHERE id = $1", order_id)
+        order = await db.fetchrow('SELECT * FROM "order" WHERE id = $1', order_id)
         if not order:
             return Response(
                 success=False, message=f"Order dengan id {order_id} tidak ditemukan"
             )
-        
-        await db.execute("DELETE FROM \"order\" WHERE id = $1", order_id)
+
+        await db.execute('DELETE FROM "order" WHERE id = $1', order_id)
 
     return Response(success=True, message=f"Berhasil menghapus order {order_id}")

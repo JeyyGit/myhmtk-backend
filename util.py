@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-SECRET = os.getenv('SECRET')
+SECRET = os.getenv("SECRET")
 
 from fastapi import Request
 from fastapi.security import HTTPBearer
@@ -19,7 +19,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.security.utils import get_authorization_scheme_param
 
 bearer_scheme = HTTPBearer()
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 
 class DBSession:
@@ -28,10 +28,10 @@ class DBSession:
 
     async def __aenter__(self) -> asyncpg.Pool:
         self.db = await asyncpg.create_pool(
-            host=os.getenv('DBHOST'),
-            database=os.getenv('DBNAME'),
-            user=os.getenv('DBUSER'),
-            password=os.getenv('DBPASS'),
+            host=os.getenv("DBHOST"),
+            database=os.getenv("DBNAME"),
+            user=os.getenv("DBUSER"),
+            password=os.getenv("DBPASS"),
         )
         return self.db
 
@@ -68,7 +68,9 @@ class MyHMTKMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
     def need_auth(self, path):
-        if any(path.startswith(x) for x in ["/docs", "/openapi.json", "/reset_password"]):
+        if any(
+            path.startswith(x) for x in ["/docs", "/openapi.json", "/reset_password"]
+        ):
             return False
         else:
             return True
@@ -81,7 +83,9 @@ def hash_str(string):
 def encode_jwt(payload):
     return jwt.encode(payload, SECRET, algorithm="HS256")
 
+
 # def generate_token()
+
 
 def send_email(email, name, token):
     sender = "no_reply@mail.myhmtk.jeyy.xyz"
@@ -97,11 +101,10 @@ https://myhmtk.jeyy.xyz/reset_password?token={token}
 
 You can ignore this email if this isn't you.
 """
-    
+
     try:
-        smtpObj = smtplib.SMTP('localhost')
+        smtpObj = smtplib.SMTP("localhost")
         smtpObj.sendmail(sender, receivers, message)
         print(f"Successfully sent email to {email}")
     except:
         print(f"Error: unable to send email to {email}")
-

@@ -112,4 +112,3 @@ async def delete_student(nim: int):
         await db.execute("DELETE FROM mahasiswa WHERE nim = $1", nim)
 
     return Response(success=True, message=f"Berhasil menghapus mahasiswa {nim}")
-

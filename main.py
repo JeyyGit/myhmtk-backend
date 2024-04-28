@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Depends
 from fastapi.responses import RedirectResponse
-# from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 from routes.route_auth import auth_router
@@ -31,9 +30,10 @@ app.add_middleware(
 
 app.state.tokens = []
 
-@app.get('/')
+
+@app.get("/")
 async def root():
-    return RedirectResponse('/docs')
+    return RedirectResponse("/docs")
 
 
 app.include_router(auth_router, dependencies=[Depends(bearer_scheme)])

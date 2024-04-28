@@ -67,7 +67,10 @@ async def reset_password(request: Request, email: str):
         exp = dt.datetime.now() + dt.timedelta(hours=1)
 
         await db.execute(
-            "INSERT INTO tokens (mahasiswa_nim, exp, token) VALUES ($1, $2, $3)", student["nim"], exp, token
+            "INSERT INTO tokens (mahasiswa_nim, exp, token) VALUES ($1, $2, $3)",
+            student["nim"],
+            exp,
+            token,
         )
 
         return Response(success=True, message="Email reset password terkirim")

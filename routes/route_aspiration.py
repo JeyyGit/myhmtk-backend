@@ -64,4 +64,3 @@ async def add_aspiration(mahasiswa_nim: int, title: str, content: str):
         )
 
     return Response(success=True, message="Berhasil menambahkan aspirasi baru")
-

@@ -91,7 +91,9 @@ async def delete_admin(admin_id: int):
             )
 
         await db.execute(
-            "DELETE FROM post WHERE poster_id = $1 AND poster_type = $2", admin_id, "admin"
+            "DELETE FROM post WHERE poster_id = $1 AND poster_type = $2",
+            admin_id,
+            "admin",
         )
         await db.execute("DELETE FROM admin WHERE id = $1", admin_id)
 
