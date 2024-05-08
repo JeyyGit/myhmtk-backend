@@ -79,8 +79,7 @@ class GetAllAspirationResponse(BaseModel):
 # Post
 class Post(BaseModel):
     id: int
-    poster_type: Literal["mahasiswa", "admin"]
-    poster: Union[Admin, Student]
+    poster: Student
     post_date: dt.datetime
     img_url: Optional[str]
     content: str
