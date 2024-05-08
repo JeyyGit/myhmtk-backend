@@ -63,8 +63,8 @@ async def get_all_fun_tk():
     )
 
 
-@fun_tk_router.get("/{admin_id}", response_model=GetFunTKResponse)
-async def get_fun_tk(admin_id: int):
+@fun_tk_router.get("/{fun_tk_id}", response_model=GetFunTKResponse)
+async def get_fun_tk(fun_tk_id: int):
     async with DBSession() as db:
         fun_tk = await db.fetchrow(
             """
@@ -89,13 +89,13 @@ async def get_fun_tk(admin_id: int):
             WHERE
                 ftk.id = $1
             """,
-            admin_id,
+            fun_tk_id,
         )
 
     if not fun_tk:
         return GetFunTKResponse(
             success=False,
-            message=f"Fun TK dengan id {admin_id} tidak ditemukan",
+            message=f"Fun TK dengan id {fun_tk_id} tidak ditemukan",
             fun_tk=None,
         )
 
@@ -152,9 +152,9 @@ async def add_fun_tk(
     return Response(success=True, message="Berhasil menambahkan fun tk baru")
 
 
-@fun_tk_router.put("/{admin_id}")
+@fun_tk_router.put("/{fun_tk_id}")
 async def update_fun_tk(
-    admin_id: int,
+    fun_tk_id: int,
     img_url: Optional[str] = None,
     date: Optional[dt.date] = None,
     time: Optional[dt.time] = None,
@@ -162,11 +162,11 @@ async def update_fun_tk(
     map_url: Optional[str] = None,
 ):
     async with DBSession() as db:
-        fun_tk = await db.fetchrow("SELECT * FROM fun_tk WHERE id = $1", admin_id)
+        fun_tk = await db.fetchrow("SELECT * FROM fun_tk WHERE id = $1", fun_tk_id)
         if not fun_tk:
             return Response(
                 success=False,
-                message=f"Fun tk dengan id {admin_id} tidak ditemukan",
+                message=f"Fun tk dengan id {fun_tk_id} tidak ditemukan",
             )
 
         await db.execute(
@@ -176,23 +176,23 @@ async def update_fun_tk(
             time,
             location,
             map_url,
-            admin_id,
+            fun_tk_id,
         )
 
     return Response(
-        success=True, message=f"Berhasil menyunting fun tk {admin_id}"
+        success=True, message=f"Berhasil menyunting fun tk {fun_tk_id}"
     )
 
 
-@fun_tk_router.delete("/{admin_id}")
-async def delete_fun_tk(admin_id: int):
+@fun_tk_router.delete("/{fun_tk_id}")
+async def delete_fun_tk(fun_tk_id: int):
     async with DBSession() as db:
-        fun_tk = await db.fetchrow("SELECT * FROM fun_tk WHERE id = $1", admin_id)
+        fun_tk = await db.fetchrow("SELECT * FROM fun_tk WHERE id = $1", fun_tk_id)
         if not fun_tk:
             return Response(
-                success=False, message=f"Fun tk dengan id {admin_id} tidak ditemukan"
+                success=False, message=f"Fun tk dengan id {fun_tk_id} tidak ditemukan"
             )
 
-        await db.execute("DELETE FROM fun_tk WHERE id = $1", admin_id)
+        await db.execute("DELETE FROM fun_tk WHERE id = $1", fun_tk_id)
 
-    return Response(success=True, message=f"Berhasil menghapus fun tk {admin_id}")
+    return Response(success=True, message=f"Berhasil menghapus fun tk {fun_tk_id}")
