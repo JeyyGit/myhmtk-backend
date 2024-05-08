@@ -152,9 +152,9 @@ async def add_fun_tk(
     return Response(success=True, message="Berhasil menambahkan fun tk baru")
 
 
-@fun_tk_router.put("/{admin_admin_id}")
+@fun_tk_router.put("/{admin_id}")
 async def update_fun_tk(
-    admin_admin_id: int,
+    admin_id: int,
     img_url: Optional[str] = None,
     date: Optional[dt.date] = None,
     time: Optional[dt.time] = None,
@@ -162,11 +162,11 @@ async def update_fun_tk(
     map_url: Optional[str] = None,
 ):
     async with DBSession() as db:
-        fun_tk = await db.fetchrow("SELECT * FROM fun_tk WHERE id = $1", admin_admin_id)
+        fun_tk = await db.fetchrow("SELECT * FROM fun_tk WHERE id = $1", admin_id)
         if not fun_tk:
             return Response(
                 success=False,
-                message=f"Fun tk dengan id {admin_admin_id} tidak ditemukan",
+                message=f"Fun tk dengan id {admin_id} tidak ditemukan",
             )
 
         await db.execute(
@@ -176,11 +176,11 @@ async def update_fun_tk(
             time,
             location,
             map_url,
-            admin_admin_id,
+            admin_id,
         )
 
     return Response(
-        success=True, message=f"Berhasil menyunting fun tk {admin_admin_id}"
+        success=True, message=f"Berhasil menyunting fun tk {admin_id}"
     )
 
 
