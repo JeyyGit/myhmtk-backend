@@ -54,7 +54,6 @@ async def get_all_posts():
         posts.append(
             Post(
                 id=post["id"],
-                poster_type=post["poster_type"],
                 poster=poster,
                 post_date=post["post_date"],
                 img_url=post["img_url"],
@@ -81,15 +80,11 @@ async def get_post(post_id: int):
                 post.img_url,
                 post.content,
                 post.can_comment,
-                admin.name AS admin_name,
-                admin.email AS admin_email,
-                admin.pass_hash AS admin_pass_hash,
                 mahasiswa.name AS mahasiswa_name,
                 mahasiswa.tel AS mahasiswa_tel,
                 mahasiswa.email AS mahasiswa_email,
                 mahasiswa.pass_hash AS mahasiswa_pass_hash
             FROM post
-            LEFT JOIN admin ON post.poster_id = admin.id AND post.poster_type = 'admin'
             LEFT JOIN mahasiswa ON post.poster_id = mahasiswa.nim AND post.poster_type = 'mahasiswa'
             
             WHERE post.id = $1
@@ -104,25 +99,16 @@ async def get_post(post_id: int):
             post=None,
         )
 
-    if post["poster_type"] == "admin":
-        poster = Admin(
-            id=post["poster_id"],
-            name=post["admin_name"],
-            email=post["admin_email"],
-            pass_hash=post["admin_pass_hash"],
-        )
-    elif post["poster_type"] == "mahasiswa":
-        poster = Student(
-            nim=post["poster_id"],
-            name=post["mahasiswa_name"],
-            tel=post["mahasiswa_tel"],
-            email=post["mahasiswa_email"],
-            pass_hash=post["mahasiswa_pass_hash"],
-        )
+    poster = Student(
+        nim=post["poster_id"],
+        name=post["mahasiswa_name"],
+        tel=post["mahasiswa_tel"],
+        email=post["mahasiswa_email"],
+        pass_hash=post["mahasiswa_pass_hash"],
+    )
 
     post_obj = Post(
         id=post["id"],
-        poster_type=post["poster_type"],
         poster=poster,
         post_date=post["post_date"],
         img_url=post["img_url"],
@@ -138,29 +124,20 @@ async def get_post(post_id: int):
 @post_router.post("", response_model=Response)
 async def add_post(
     poster_id: int,
-    poster_type: Literal["admin", "mahasiswa"],
     post_date: dt.datetime,
     content: str,
     can_comment: bool,
     img_url: str = None,
 ):
     async with DBSession() as db:
-        if poster_type == "admin":
-            poster = await db.fetchrow("SELECT * FROM admin WHERE id = $1", poster_id)
-            if not poster:
-                return Response(
-                    success=False,
-                    message=f"Admin dengan id {poster_id} tidak ditemukan",
-                )
-        elif poster_type == "mahasiswa":
-            poster = await db.fetchrow(
-                "SELECT * FROM mahasiswa WHERE nim = $1", poster_id
+        poster = await db.fetchrow(
+            "SELECT * FROM mahasiswa WHERE nim = $1", poster_id
+        )
+        if not poster:
+            return Response(
+                success=False,
+                message=f"Mahasiswa dengan nim {poster_id} tidak ditemukan",
             )
-            if not poster:
-                return Response(
-                    success=False,
-                    message=f"Mahasiswa dengan nim {poster_id} tidak ditemukan",
-                )
 
         await db.execute(
             """
@@ -170,7 +147,7 @@ async def add_post(
                 ($1, $2, $3, $4, $5, $6)
             """,
             poster_id,
-            poster_type,
+            "mahasiswa",
             post_date,
             img_url,
             content,
