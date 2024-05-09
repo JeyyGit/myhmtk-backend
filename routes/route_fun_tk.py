@@ -13,42 +13,15 @@ fun_tk_router = APIRouter(prefix="/fun_tk", tags=["Fun TK"])
 @fun_tk_router.get("", response_model=GetAllFunTKResponse)
 async def get_all_fun_tk():
     async with DBSession() as db:
-        fun_tks_db = await db.fetch(
-            """
-            SELECT 
-                ftk.id, 
-                ftk.post_date, 
-                ftk.img_url, 
-                ftk.date, 
-                ftk.time, 
-                ftk.location,
-                ftk.map_url,
-                adm.id as admin_id,
-                adm.name as admin_name, 
-                adm.email as admin_email, 
-                adm.pass_hash as admin_pass_hash
-            FROM 
-                fun_tk ftk
-            LEFT JOIN 
-                admin adm
-            ON 
-                ftk.admin_id = adm.id
-            """
-        )
+        fun_tks_db = await db.fetch("SELECT * FROM fun_tk order by \"date\"")
 
     fun_tks = []
     for fun_tk in fun_tks_db:
-        admin = Admin(
-            id=fun_tk["admin_id"],
-            name=fun_tk["admin_name"],
-            email=fun_tk["admin_email"],
-            pass_hash=fun_tk["admin_pass_hash"],
-        )
-
         fun_tks.append(
             FunTK(
                 id=fun_tk["id"],
-                admin=admin,
+                title=fun_tk["title"],
+                description=fun_tk["description"],
                 post_date=fun_tk["post_date"],
                 img_url=fun_tk["img_url"],
                 date=fun_tk["date"],
@@ -66,31 +39,7 @@ async def get_all_fun_tk():
 @fun_tk_router.get("/{fun_tk_id}", response_model=GetFunTKResponse)
 async def get_fun_tk(fun_tk_id: int):
     async with DBSession() as db:
-        fun_tk = await db.fetchrow(
-            """
-            SELECT 
-                ftk.id, 
-                ftk.post_date, 
-                ftk.img_url, 
-                ftk.date, 
-                ftk.time, 
-                ftk.location,
-                ftk.map_url,
-                adm.id as admin_id,
-                adm.name as admin_name, 
-                adm.email as admin_email, 
-                adm.pass_hash as admin_pass_hash
-            FROM 
-                fun_tk ftk
-            LEFT JOIN 
-                admin adm
-            ON 
-                ftk.admin_id = adm.id
-            WHERE
-                ftk.id = $1
-            """,
-            fun_tk_id,
-        )
+        fun_tk = await db.fetchrow("SELECT * FROM fun_tk WHERE id = $1", fun_tk_id)
 
     if not fun_tk:
         return GetFunTKResponse(
@@ -99,16 +48,10 @@ async def get_fun_tk(fun_tk_id: int):
             fun_tk=None,
         )
 
-    admin = Admin(
-        id=fun_tk["admin_id"],
-        name=fun_tk["admin_name"],
-        email=fun_tk["admin_email"],
-        pass_hash=fun_tk["admin_pass_hash"],
-    )
-
     fun_tk_obj = FunTK(
         id=fun_tk["id"],
-        admin=admin,
+        title=fun_tk["title"],
+        description=fun_tk["description"],
         post_date=fun_tk["post_date"],
         img_url=fun_tk["img_url"],
         date=fun_tk["date"],
@@ -124,8 +67,9 @@ async def get_fun_tk(fun_tk_id: int):
 
 @fun_tk_router.post("", response_model=Response)
 async def add_fun_tk(
-    admin_id: int,
     post_date: dt.datetime,
+    title: str,
+    description: str,
     img_url: str,
     date: dt.date,
     time: dt.time,
@@ -133,21 +77,17 @@ async def add_fun_tk(
     map_url: Optional[str] = None,
 ):
     async with DBSession() as db:
-        try:
-            await db.execute(
-                "INSERT INTO fun_tk(admin_id, post_date, img_url, date, time, location, map_url) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-                admin_id,
-                post_date,
-                img_url,
-                date,
-                time,
-                location,
-                map_url,
-            )
-        except ForeignKeyViolationError:
-            return Response(
-                success=False, message=f"Admin dengan id {admin_id} tidak ditemukan"
-            )
+        await db.execute(
+            "INSERT INTO fun_tk(post_date, title, description, img_url, date, time, location, map_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            post_date,
+            title,
+            description,
+            img_url,
+            date,
+            time,
+            location,
+            map_url,
+        )
 
     return Response(success=True, message="Berhasil menambahkan fun tk baru")
 
@@ -155,6 +95,8 @@ async def add_fun_tk(
 @fun_tk_router.put("/{fun_tk_id}")
 async def update_fun_tk(
     fun_tk_id: int,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
     img_url: Optional[str] = None,
     date: Optional[dt.date] = None,
     time: Optional[dt.time] = None,
@@ -170,18 +112,29 @@ async def update_fun_tk(
             )
 
         await db.execute(
-            "UPDATE fun_tk SET img_url = COALESCE($1, img_url), date = COALESCE($2, date), time = COALESCE($3, time), location = COALESCE($4, location), map_url = COALESCE($5, map_url) WHERE id = $6",
+            """
+            UPDATE fun_tk 
+            SET 
+                img_url = COALESCE($1, img_url), 
+                date = COALESCE($2, date), 
+                time = COALESCE($3, time), 
+                location = COALESCE($4, location), 
+                map_url = COALESCE($5, map_url), 
+                title = COALESCE($6, title), 
+                description = COALESCE($7, description) 
+            WHERE id = $8
+            """,
             img_url,
             date,
             time,
             location,
             map_url,
+            title,
+            description,
             fun_tk_id,
         )
 
-    return Response(
-        success=True, message=f"Berhasil menyunting fun tk {fun_tk_id}"
-    )
+    return Response(success=True, message=f"Berhasil menyunting fun tk {fun_tk_id}")
 
 
 @fun_tk_router.delete("/{fun_tk_id}")

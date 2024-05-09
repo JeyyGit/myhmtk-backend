@@ -123,7 +123,8 @@ class GetLabPostResponse(BaseModel):
 # Fun TK
 class FunTK(BaseModel):
     id: int
-    admin: Admin
+    title: str
+    description: str
     post_date: dt.datetime
     img_url: str
     date: dt.date
