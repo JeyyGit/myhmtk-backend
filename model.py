@@ -101,9 +101,8 @@ class GetPostResponse(BaseModel):
 # Lab Post
 class LabPost(BaseModel):
     id: int
-    admin: Admin
     post_date: dt.datetime
-    lab: Literal["magics", "sea", "rnest", "security", "evconn"]
+    lab: Literal["magics", "sea", "rnest", "security", "evconn", "ismile"]
     img_url: Optional[str]
     content: str
 

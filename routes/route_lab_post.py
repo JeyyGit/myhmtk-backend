@@ -12,41 +12,18 @@ lab_post_router = APIRouter(prefix="/lab_post", tags=["Lab Post"])
 
 
 @lab_post_router.get("", response_model=GetAllLabPostResponse)
-async def get_all_lab_posts():
+async def get_all_lab_posts(lab: Optional[Literal["magics", "sea", "rnest", "security", "evconn", "ismile"]] = None):
     async with DBSession() as db:
-        lab_posts_db = await db.fetch(
-            """
-            SELECT 
-                lp.id, 
-                lp.admin_id, 
-                lp.post_date, 
-                lp.lab, 
-                lp.img_url, 
-                lp.content, 
-                adm.name as admin_name, 
-                adm.email as admin_email, 
-                adm.pass_hash as admin_pass_hash
-            FROM 
-                lab_post lp 
-            LEFT JOIN 
-                admin adm 
-            ON 
-                lp.admin_id = adm.id
-            """
-        )
+        if not lab:
+            lab_posts_db = await db.fetch("SELECT * FROM lab_post ORDER BY post_date")
+        else:
+            lab_posts_db = await db.fetch("SELECT * FROM lab_post WHERE lab = $1 ORDER BY post_date", lab)
 
     lab_posts = []
     for lab_post in lab_posts_db:
-        admin = Admin(
-            id=lab_post["admin_id"],
-            name=lab_post["admin_name"],
-            email=lab_post["admin_email"],
-            pass_hash=lab_post["admin_pass_hash"],
-        )
         lab_posts.append(
             LabPost(
                 id=lab_post["id"],
-                admin=admin,
                 post_date=lab_post["post_date"],
                 lab=lab_post["lab"],
                 img_url=lab_post["img_url"],
@@ -61,49 +38,20 @@ async def get_all_lab_posts():
     )
 
 
-@lab_post_router.get("/{admin_id}", response_model=GetLabPostResponse)
-async def get_lab_post(admin_id: int):
+@lab_post_router.get("/{lab_post_id}", response_model=GetLabPostResponse)
+async def get_lab_post(lab_post_id: int):
     async with DBSession() as db:
-        lab_post = await db.fetchrow(
-            """
-            SELECT 
-                lp.id, 
-                lp.admin_id, 
-                lp.post_date, 
-                lp.lab, 
-                lp.img_url, 
-                lp.content, 
-                adm.name as admin_name, 
-                adm.email as admin_email, 
-                adm.pass_hash as admin_pass_hash
-            FROM 
-                lab_post lp 
-            LEFT JOIN 
-                admin adm 
-            ON 
-                lp.admin_id = adm.id
-            WHERE
-                lp.id = $1
-            """,
-            id,
-        )
+        lab_post = await db.fetchrow("SELECT * FROM lab_post WHERE ", lab_post_id)
 
     if not lab_post:
         return GetLabPostResponse(
             success=False,
-            message=f"Lab post dengan id {admin_id} tidak ditemukan",
+            message=f"Lab post dengan id {lab_post_id} tidak ditemukan",
             lab_post=None,
         )
 
-    admin = Admin(
-        id=lab_post["admin_id"],
-        name=lab_post["admin_name"],
-        email=lab_post["admin_email"],
-        pass_hash=lab_post["admin_pass_hash"],
-    )
     lab_post_obj = LabPost(
         id=lab_post["id"],
-        admin=admin,
         post_date=lab_post["post_date"],
         lab=lab_post["lab"],
         img_url=lab_post["img_url"],
@@ -117,60 +65,59 @@ async def get_lab_post(admin_id: int):
 
 @lab_post_router.post("", response_model=Response)
 async def add_lab_post(
-    admin_id: int,
     post_date: dt.datetime,
-    lab: Literal["magics", "sea", "rnest", "security", "evconn"],
+    lab: Literal["magics", "sea", "rnest", "security", "evconn", "ismile"],
     content: str,
     img_url: Optional[str] = None,
 ):
     async with DBSession() as db:
-        try:
-            await db.execute(
-                "INSERT INTO lab_post(admin_id, post_date, lab, content, img_url) VALUES ($1, $2, $3, $4 , $5)",
-                admin_id,
-                post_date,
-                lab,
-                content,
-                img_url,
-            )
-        except ForeignKeyViolationError:
-            return Response(
-                success=False, message=f"Admin dengan id {admin_id} tidak ditemukan"
-            )
+        await db.execute(
+            "INSERT INTO lab_post(post_date, lab, content, img_url) VALUES ($1, $2, $3, $4)",
+            post_date,
+            lab,
+            content,
+            img_url,
+        )
 
     return Response(success=True, message="Berhasil menambahkan lab post baru")
 
 
-@lab_post_router.put("/{admin_id}", response_model=Response)
+@lab_post_router.put("/{lab_post_id}", response_model=Response)
 async def update_lab_post(
-    admin_id: int, content: Optional[str] = None, img_url: Optional[str] = None
+    lab_post_id: int, content: Optional[str] = None, img_url: Optional[str] = None
 ):
     async with DBSession() as db:
-        lab_post = await db.fetchrow("SELECT * FROM lab_post WHERE id = $1", admin_id)
+        lab_post = await db.fetchrow(
+            "SELECT * FROM lab_post WHERE id = $1", lab_post_id
+        )
         if not lab_post:
             return Response(
-                success=False, message=f"Lab post dengan id {admin_id} tidak ditemukan"
+                success=False,
+                message=f"Lab post dengan id {lab_post_id} tidak ditemukan",
             )
 
         await db.execute(
             "UPDATE lab_post SET content = COALESCE($1, content), img_url = COALESCE($2, content) WHERE id = $3",
             content,
             img_url,
-            admin_id,
+            lab_post_id,
         )
 
-    return Response(success=True, message=f"Berhasil menyunting lab post {admin_id}")
+    return Response(success=True, message=f"Berhasil menyunting lab post {lab_post_id}")
 
 
-@lab_post_router.delete("/{id}")
-async def delete_lab_post(admin_id: int):
+@lab_post_router.delete("/{lab_post_id}")
+async def delete_lab_post(lab_post_id: int):
     async with DBSession() as db:
-        lab_post = await db.fetchrow("SELECT * FROM lab_post WHERE id = $1", admin_id)
+        lab_post = await db.fetchrow(
+            "SELECT * FROM lab_post WHERE id = $1", lab_post_id
+        )
         if not lab_post:
             return Response(
-                success=False, message=f"Lab post dengan id {admin_id} tidak ditemukan"
+                success=False,
+                message=f"Lab post dengan id {lab_post_id} tidak ditemukan",
             )
 
-        await db.execute("DELETE FROM lab_post WHERE id = $1", admin_id)
+        await db.execute("DELETE FROM lab_post WHERE id = $1", lab_post_id)
 
-    return Response(success=True, message=f"Berhasil menghapus lab post {admin_id}")
+    return Response(success=True, message=f"Berhasil menghapus lab post {lab_post_id}")
