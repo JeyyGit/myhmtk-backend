@@ -37,7 +37,8 @@ async def get_all_posts():
                 mahasiswa.email AS mahasiswa_email,
                 mahasiswa.pass_hash AS mahasiswa_pass_hash
             FROM post
-            LEFT JOIN mahasiswa ON post.poster_id = mahasiswa.nim AND post.poster_type = 'mahasiswa';
+            LEFT JOIN mahasiswa ON post.poster_id = mahasiswa.nim AND post.poster_type = 'mahasiswa'
+            ORDER BY post.post_date DESC
         """
         )
 

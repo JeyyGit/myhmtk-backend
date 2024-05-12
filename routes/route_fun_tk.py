@@ -13,7 +13,7 @@ fun_tk_router = APIRouter(prefix="/fun_tk", tags=["Fun TK"])
 @fun_tk_router.get("", response_model=GetAllFunTKResponse)
 async def get_all_fun_tk():
     async with DBSession() as db:
-        fun_tks_db = await db.fetch("SELECT * FROM fun_tk order by \"date\"")
+        fun_tks_db = await db.fetch("SELECT * FROM fun_tk order by \"date\" DESC")
 
     fun_tks = []
     for fun_tk in fun_tks_db:
