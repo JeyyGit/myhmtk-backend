@@ -34,9 +34,6 @@ async def get_all_orders(nim: int = None):
                     o.quantity,
                     o.size,
                     o.information,
-                    o.order_date,
-                    o.paid,
-                    o.completed,
                     p.name AS product_name,
                     p.price AS product_price,
                     p.description as product_desc,
@@ -64,9 +61,6 @@ async def get_all_orders(nim: int = None):
                     o.quantity,
                     o.size,
                     o.information,
-                    o.order_date,
-                    o.paid,
-                    o.completed,
                     p.name AS product_name,
                     p.price AS product_price,
                     p.description as product_desc,
@@ -108,9 +102,9 @@ async def get_all_orders(nim: int = None):
                 quantity=order["quantity"],
                 size=order["size"],
                 information=order["information"],
-                order_date=order["order_date"],
-                paid=order["paid"],
-                completed=order["completed"],
+                # order_date=order["order_date"],
+                # paid=order["paid"],
+                # completed=order["completed"],
             )
         )
 
@@ -130,9 +124,6 @@ async def get_order(order_id: int):
                 o.quantity,
                 o.size,
                 o.information,
-                o.order_date,
-                o.paid,
-                o.completed,
                 p.name AS product_name,
                 p.price AS product_price,
                 p.description as product_desc,
@@ -179,9 +170,9 @@ async def get_order(order_id: int):
         quantity=order_db["quantity"],
         size=order_db["size"],
         information=order_db["information"],
-        order_date=order_db["order_date"],
-        paid=order_db["paid"],
-        completed=order_db["completed"],
+        # order_date=order_db["order_date"],
+        # paid=order_db["paid"],
+        # completed=order_db["completed"],
     )
 
     return GetOrderResponse(
@@ -195,9 +186,6 @@ async def add_order(
     product_id: int,
     quantity: int,
     size: Literal["xs", "s", "m", "l", "xl", "xxl"],
-    order_date: dt.datetime,
-    paid: bool,
-    completed: bool,
     information: Optional[str] = None,
 ):
     async with DBSession() as db:
@@ -216,7 +204,7 @@ async def add_order(
         await db.execute(
             """
             INSERT INTO "order"
-                (mahasiswa_nim, product_id, quantity, size, information, order_date, paid, completed)
+                (mahasiswa_nim, product_id, quantity, size, information)
             VALUES
                 ($1, $2, $3, $4, $5, $6, $7, $8)
         """,
@@ -225,49 +213,46 @@ async def add_order(
             quantity,
             size,
             information,
-            order_date,
-            paid,
-            completed,
         )
 
         return Response(success=True, message="Berhasil menambahkan order baru")
 
 
-@order_router.put("/{order_id}", response_model=Response)
-async def update_order(
-    order_id: int, paid: Optional[bool] = None, completed: Optional[bool] = None
-):
-    async with DBSession() as db:
-        order = await db.fetchrow('SELECT * FROM "order" WHERE id = $1', order_id)
-        if not order:
-            return Response(
-                success=False, message=f"Order dengan id {order_id} tidak ditemukan"
-            )
+# @order_router.put("/{order_id}", response_model=Response)
+# async def update_order(
+#     order_id: int, paid: Optional[bool] = None, completed: Optional[bool] = None
+# ):
+#     async with DBSession() as db:
+#         order = await db.fetchrow('SELECT * FROM "order" WHERE id = $1', order_id)
+#         if not order:
+#             return Response(
+#                 success=False, message=f"Order dengan id {order_id} tidak ditemukan"
+#             )
 
-        await db.execute(
-            """
-            UPDATE "order" SET
-                paid = COALESCE($1, paid),
-                completed = COALESCE($2, completed)
-            WHERE id = $3
-        """,
-            paid,
-            completed,
-            order_id,
-        )
+#         await db.execute(
+#             """
+#             UPDATE "order" SET
+#                 paid = COALESCE($1, paid),
+#                 completed = COALESCE($2, completed)
+#             WHERE id = $3
+#         """,
+#             paid,
+#             completed,
+#             order_id,
+#         )
 
-    return Response(success=True, message=f"Berhasil menyunting order {order_id}")
+#     return Response(success=True, message=f"Berhasil menyunting order {order_id}")
 
 
-@order_router.delete("/{order_id}", response_model=Response)
-async def delete_order(order_id: int):
-    async with DBSession() as db:
-        order = await db.fetchrow('SELECT * FROM "order" WHERE id = $1', order_id)
-        if not order:
-            return Response(
-                success=False, message=f"Order dengan id {order_id} tidak ditemukan"
-            )
+# @order_router.delete("/{order_id}", response_model=Response)
+# async def delete_order(order_id: int):
+#     async with DBSession() as db:
+#         order = await db.fetchrow('SELECT * FROM "order" WHERE id = $1', order_id)
+#         if not order:
+#             return Response(
+#                 success=False, message=f"Order dengan id {order_id} tidak ditemukan"
+#             )
 
-        await db.execute('DELETE FROM "order" WHERE id = $1', order_id)
+#         await db.execute('DELETE FROM "order" WHERE id = $1', order_id)
 
-    return Response(success=True, message=f"Berhasil menghapus order {order_id}")
+#     return Response(success=True, message=f"Berhasil menghapus order {order_id}")
