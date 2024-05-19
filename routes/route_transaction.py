@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from typing import List
+from typing import List, Optional
 import datetime as dt
 import pytz
 
@@ -298,7 +298,31 @@ async def add_student_transaction(nim: int, cart_ids: List[int]):
 
 
 @transaction_router.put("/{nim}/transactions/{transaction_id}")
-async def update_student_transaction(nim: int, transaction_id: int): ...
+async def update_student_transaction(
+    nim: int, transaction_id: int, paid: Optional[bool], completed: Optional[bool]
+):
+    async with DBSession() as db:
+        student = await db.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
+        if not student:
+            return Response(
+                success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
+            )
+
+        transaction = await db.fetchrow(
+            "SELECT * FROM transactions WHERE id = $1", transaction_id
+        )
+        if not transaction:
+            return Response(
+                success=False,
+                message=f"Transaksi dengan id {transaction_id} tidak ditemukan",
+            )
+
+        await db.execute(
+            "UPDATE transaction SET paid = COALESCE($1, paid), completed = COALESCE($2, completed) WHERE id = $3",
+            paid,
+            completed,
+            transaction_id,
+        )
 
 
 # can not delete a transaction
