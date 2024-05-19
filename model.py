@@ -231,14 +231,12 @@ class GetStudentCartResponse(BaseModel):
 # Order
 class Order(BaseModel):
     id: int
-    mahasiswa: Student
+    # mahasiswa: Student
     product: Product
     quantity: int
     size: Literal["xs", "s", "m", "l", "xl", "xxl"]
     information: Optional[str]
-    order_date: dt.datetime
-    paid: bool
-    completed: bool
+    # transaction_id: int
 
 
 class GetAllOrderResponse(BaseModel):
@@ -251,3 +249,29 @@ class GetOrderResponse(BaseModel):
     success: bool
     message: str
     order: Optional[Order]
+
+
+# Transaction
+class Transaction(BaseModel):
+    id: int
+    mahasiswa: Student
+    orders: List[Order]
+    transaction_date: dt.datetime
+    paid: bool
+    completed: bool
+    payment_url: str
+
+class GetAllTransactionResponse(BaseModel):
+    success: bool
+    message: str
+    transactions: List[Transaction]
+
+class GetTransactionResponse(BaseModel):
+    success: bool
+    message: str
+    transaction: Optional[Transaction]
+
+class AddTransactionResponse(BaseModel):
+    success: bool
+    message: str
+    payment_url: Optional[str]

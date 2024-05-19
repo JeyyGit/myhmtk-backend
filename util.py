@@ -1,7 +1,9 @@
+import midtransclient
 import smtplib
 import asyncpg
 import hashlib
 import asyncpg
+import aiohttp
 import jwt
 import os
 from dotenv import load_dotenv
@@ -20,6 +22,12 @@ from fastapi.security.utils import get_authorization_scheme_param
 
 bearer_scheme = HTTPBearer()
 SECRET_KEY = os.getenv("SECRET_KEY")
+
+snap_api = midtransclient.Snap(
+    is_production=False,
+    server_key=os.getenv("MIDTRANS_SERVER_KEY"),
+    client_key=os.getenv("MIDTRANS_CLIENT_KEY")
+)
 
 
 class DBSession:
@@ -108,3 +116,12 @@ You can ignore this email if this isn't you.
         print(f"Successfully sent email to {email}")
     except:
         print(f"Error: unable to send email to {email}")
+
+
+async def create_transaction(payload):
+    try:
+        snap_url = snap_api.create_transaction_redirect_url(payload)
+        return snap_url
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Midtrans Error: {e}")
+

@@ -5,6 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 from routes.route_auth import auth_router
 from routes.route_student import student_router
 from routes.route_cart import cart_router
+from routes.route_transaction import transaction_router
 from routes.route_order import order_router
 from routes.route_admin import admin_router
 from routes.route_post import post_router
@@ -40,6 +41,7 @@ app.include_router(auth_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(admin_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(student_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(cart_router, dependencies=[Depends(bearer_scheme)])
+app.include_router(transaction_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(order_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(post_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(lab_post_router, dependencies=[Depends(bearer_scheme)])
