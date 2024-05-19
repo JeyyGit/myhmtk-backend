@@ -254,7 +254,7 @@ class GetOrderResponse(BaseModel):
 # Transaction
 class Transaction(BaseModel):
     id: int
-    mahasiswa: Student
+    # mahasiswa: Student
     orders: List[Order]
     transaction_date: dt.datetime
     paid: bool

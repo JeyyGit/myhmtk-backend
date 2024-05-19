@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from typing import List, Optional
 import datetime as dt
@@ -116,7 +116,7 @@ async def get_student_transaction(nim: int, transaction_id: int):
                 message=f"Mahasiswa dengan nim {nim} tidak ditemukan",
                 transactions=[],
             )
-        transaction_db = await db.fetchrow(
+        transaction_db = await db.fetch(
             """
             SELECT
                 t.id AS transaction_id,
@@ -175,6 +175,7 @@ async def get_student_transaction(nim: int, transaction_id: int):
 
     transaction = Transaction(
         id=transaction_data["transaction_id"],
+        # mahasiswa=student,
         orders=[Order(**order_data) for order_data in transaction_data["orders"]],
         transaction_date=transaction_data["transaction_date"],
         paid=transaction_data["paid"],
@@ -265,7 +266,12 @@ async def add_student_transaction(nim: int, cart_ids: List[int]):
             # "enabled_payments": ["credit_card", "gopay", "shopeepay", "other_qris"],
         }
 
-        redirect_url = await create_transaction(midtrans_payload)
+        try:
+            redirect_url = await create_transaction(midtrans_payload)
+        except Exception as e:
+            await db.execute("DELETE FROM transaction WHERE id = $1", transaction_id)
+            return HTTPException(status_code=400, detail=str(e))
+
         await db.execute("UPDATE transaction SET payment_url = $1", redirect_url)
 
         await db.executemany(
