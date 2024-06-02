@@ -54,6 +54,7 @@ async def get_all_student_transactions(nim: int):
                 JOIN product p ON o.product_id = p.id
             WHERE
                 t.mahasiswa_nim = $1
+            ORDER BY transaction_date DESC
         """,
             nim,
         )
@@ -344,6 +345,13 @@ async def update_student_transaction(
             transaction_id,
         )
 
+
+@transaction_router.get('/midtrans_callback')
+async def midtrans_callback(order_id: int, status_code: int, transaction_status: str):
+    async with DBSession() as db:
+        if transaction_status in ['settlement', 'capture']:
+            await db.execute("UPDATE transaction SET paid = true WHERE id = $1", order_id)
+        
 
 # can not delete a transaction
 # @transaction_router.delete("...")
