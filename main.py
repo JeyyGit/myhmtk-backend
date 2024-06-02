@@ -16,7 +16,7 @@ from routes.route_academic_resource import academic_resource_router
 from routes.route_product import product_router
 from routes.reset_password import reset_pw_router
 
-from util import bearer_scheme, MyHMTKMiddleware
+from util import bearer_scheme, MyHMTKMiddleware, db
 
 app = FastAPI()
 
@@ -30,6 +30,16 @@ app.add_middleware(
 )
 
 app.state.tokens = []
+
+
+@app.on_event("startup")
+async def startup():
+    await db.create_pool()
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await db.pool.close()
 
 
 @app.get("/")

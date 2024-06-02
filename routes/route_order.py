@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from typing import Optional, Literal
 import datetime as dt
 
-from util import DBSession
+from util import db
 from model import (
     Response,
     Order,
@@ -19,64 +19,63 @@ order_router = APIRouter(prefix="/order", tags=["Order"])
 
 @order_router.get("", response_model=GetAllOrderResponse)
 async def get_all_orders(nim: int = None):
-    async with DBSession() as db:
-        if nim:
-            student = await db.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
-            if not student:
-                return GetAllOrderResponse(
-                    success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
-                )
-            orders_db = await db.fetch(
-                """
-                SELECT
-                    o.id AS order_id,
-                    o.product_id,
-                    o.quantity,
-                    o.size,
-                    o.information,
-                    p.name AS product_name,
-                    p.price AS product_price,
-                    p.description as product_desc,
-                    p.img_url as product_img_url,
-                    m.nim as mhs_nim,
-                    m.name as mhs_name,
-                    m.tel as mhs_tel,
-                    m.email as mhs_email,
-                    m.pass_hash as mhs_pass_hash
-                FROM "order" o
-                LEFT JOIN product p ON
-                    o.product_id = p.id
-                LEFT JOIN mahasiswa m ON
-                    o.mahasiswa_nim = m.nim
-                WHERE mahasiswa_nim = $1
-                """,
-                nim,
+    if nim:
+        student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
+        if not student:
+            return GetAllOrderResponse(
+                success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
             )
-        else:
-            orders_db = await db.fetch(
-                """
-                SELECT
-                    o.id AS order_id,
-                    o.product_id,
-                    o.quantity,
-                    o.size,
-                    o.information,
-                    p.name AS product_name,
-                    p.price AS product_price,
-                    p.description as product_desc,
-                    p.img_url as product_img_url,
-                    m.nim as mhs_nim,
-                    m.name as mhs_name,
-                    m.tel as mhs_tel,
-                    m.email as mhs_email,
-                    m.pass_hash as mhs_pass_hash
-                FROM "order" o
-                LEFT JOIN product p ON
-                    o.product_id = p.id
-                LEFT JOIN mahasiswa m ON
-                    o.mahasiswa_nim = m.nim
-                """
-            )
+        orders_db = await db.pool.fetch(
+            """
+            SELECT
+                o.id AS order_id,
+                o.product_id,
+                o.quantity,
+                o.size,
+                o.information,
+                p.name AS product_name,
+                p.price AS product_price,
+                p.description as product_desc,
+                p.img_url as product_img_url,
+                m.nim as mhs_nim,
+                m.name as mhs_name,
+                m.tel as mhs_tel,
+                m.email as mhs_email,
+                m.pass_hash as mhs_pass_hash
+            FROM "order" o
+            LEFT JOIN product p ON
+                o.product_id = p.id
+            LEFT JOIN mahasiswa m ON
+                o.mahasiswa_nim = m.nim
+            WHERE mahasiswa_nim = $1
+            """,
+            nim,
+        )
+    else:
+        orders_db = await db.pool.fetch(
+            """
+            SELECT
+                o.id AS order_id,
+                o.product_id,
+                o.quantity,
+                o.size,
+                o.information,
+                p.name AS product_name,
+                p.price AS product_price,
+                p.description as product_desc,
+                p.img_url as product_img_url,
+                m.nim as mhs_nim,
+                m.name as mhs_name,
+                m.tel as mhs_tel,
+                m.email as mhs_email,
+                m.pass_hash as mhs_pass_hash
+            FROM "order" o
+            LEFT JOIN product p ON
+                o.product_id = p.id
+            LEFT JOIN mahasiswa m ON
+                o.mahasiswa_nim = m.nim
+            """
+        )
 
     orders = []
     for order in orders_db:
@@ -115,33 +114,32 @@ async def get_all_orders(nim: int = None):
 
 @order_router.get("/{order_id}", response_model=GetOrderResponse)
 async def get_order(order_id: int):
-    async with DBSession() as db:
-        order_db = await db.fetchrow(
-            """
-            SELECT
-                o.id AS order_id,
-                o.product_id,
-                o.quantity,
-                o.size,
-                o.information,
-                p.name AS product_name,
-                p.price AS product_price,
-                p.description as product_desc,
-                p.img_url as product_img_url,
-                m.nim as mhs_nim,
-                m.name as mhs_name,
-                m.tel as mhs_tel,
-                m.email as mhs_email,
-                m.pass_hash as mhs_pass_hash
-            FROM "order" o
-            LEFT JOIN product p ON
-                o.product_id = p.id
-            LEFT JOIN mahasiswa m ON
-                o.mahasiswa_nim = m.nim
-            WHERE o.id = $1
-            """,
-            order_id,
-        )
+    order_db = await db.pool.fetchrow(
+        """
+        SELECT
+            o.id AS order_id,
+            o.product_id,
+            o.quantity,
+            o.size,
+            o.information,
+            p.name AS product_name,
+            p.price AS product_price,
+            p.description as product_desc,
+            p.img_url as product_img_url,
+            m.nim as mhs_nim,
+            m.name as mhs_name,
+            m.tel as mhs_tel,
+            m.email as mhs_email,
+            m.pass_hash as mhs_pass_hash
+        FROM "order" o
+        LEFT JOIN product p ON
+            o.product_id = p.id
+        LEFT JOIN mahasiswa m ON
+            o.mahasiswa_nim = m.nim
+        WHERE o.id = $1
+        """,
+        order_id,
+    )
 
     if not order_db:
         return GetOrderResponse(
@@ -188,48 +186,47 @@ async def add_order(
     size: Literal["xs", "s", "m", "l", "xl", "xxl"],
     information: Optional[str] = None,
 ):
-    async with DBSession() as db:
-        student = await db.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
-        if not student:
-            return Response(
-                success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
-            )
-
-        product = await db.fetchrow("SELECT * FROM product WHERE id = $1", product_id)
-        if not product:
-            return Response(
-                success=False, message=f"Product dengan id {product_id} tidak ditemukan"
-            )
-
-        await db.execute(
-            """
-            INSERT INTO "order"
-                (mahasiswa_nim, product_id, quantity, size, information)
-            VALUES
-                ($1, $2, $3, $4, $5, $6, $7, $8)
-        """,
-            nim,
-            product_id,
-            quantity,
-            size,
-            information,
+    student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
+    if not student:
+        return Response(
+            success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
         )
 
-        return Response(success=True, message="Berhasil menambahkan order baru")
+    product = await db.pool.fetchrow("SELECT * FROM product WHERE id = $1", product_id)
+    if not product:
+        return Response(
+            success=False, message=f"Product dengan id {product_id} tidak ditemukan"
+        )
+
+    await db.pool.execute(
+        """
+        INSERT INTO "order"
+            (mahasiswa_nim, product_id, quantity, size, information)
+        VALUES
+            ($1, $2, $3, $4, $5, $6, $7, $8)
+    """,
+        nim,
+        product_id,
+        quantity,
+        size,
+        information,
+    )
+
+    return Response(success=True, message="Berhasil menambahkan order baru")
 
 
 # @order_router.put("/{order_id}", response_model=Response)
 # async def update_order(
 #     order_id: int, paid: Optional[bool] = None, completed: Optional[bool] = None
 # ):
-#     async with DBSession() as db:
-#         order = await db.fetchrow('SELECT * FROM "order" WHERE id = $1', order_id)
+#     
+#         order = await db.pool.fetchrow('SELECT * FROM "order" WHERE id = $1', order_id)
 #         if not order:
 #             return Response(
 #                 success=False, message=f"Order dengan id {order_id} tidak ditemukan"
 #             )
 
-#         await db.execute(
+#         await db.pool.execute(
 #             """
 #             UPDATE "order" SET
 #                 paid = COALESCE($1, paid),
@@ -246,13 +243,13 @@ async def add_order(
 
 # @order_router.delete("/{order_id}", response_model=Response)
 # async def delete_order(order_id: int):
-#     async with DBSession() as db:
-#         order = await db.fetchrow('SELECT * FROM "order" WHERE id = $1', order_id)
+#     
+#         order = await db.pool.fetchrow('SELECT * FROM "order" WHERE id = $1', order_id)
 #         if not order:
 #             return Response(
 #                 success=False, message=f"Order dengan id {order_id} tidak ditemukan"
 #             )
 
-#         await db.execute('DELETE FROM "order" WHERE id = $1', order_id)
+#         await db.pool.execute('DELETE FROM "order" WHERE id = $1', order_id)
 
 #     return Response(success=True, message=f"Berhasil menghapus order {order_id}")

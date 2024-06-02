@@ -7,7 +7,7 @@ from model import (
     GetStudentCartResponse,
     GetAllStudentCartResponse,
 )
-from util import DBSession
+from util import db
 from typing import Literal, Optional
 
 cart_router = APIRouter(prefix="/student", tags=["Cart"])
@@ -15,33 +15,32 @@ cart_router = APIRouter(prefix="/student", tags=["Cart"])
 
 @cart_router.get("/{nim}/cart", response_model=GetAllStudentCartResponse)
 async def get_all_student_carts(nim: int):
-    async with DBSession() as db:
-        student = await db.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
-        if not student:
-            return GetAllStudentCartResponse(
-                success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
-            )
-
-        carts_db = await db.fetch(
-            """
-            SELECT 
-                c.id AS cart_id,
-                c.quantity,
-                c.size,
-                c.information,
-                c.mahasiswa_nim,
-                p.id AS product_id,
-                p.name AS product_name, 
-                p.price AS product_price,
-                p.description as product_desc,
-                p.img_url as product_img_url
-            FROM cart c
-            LEFT JOIN product p ON
-                c.product_id = p.id       
-            WHERE mahasiswa_nim = $1
-        """,
-            nim,
+    student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
+    if not student:
+        return GetAllStudentCartResponse(
+            success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
         )
+
+    carts_db = await db.pool.fetch(
+        """
+        SELECT 
+            c.id AS cart_id,
+            c.quantity,
+            c.size,
+            c.information,
+            c.mahasiswa_nim,
+            p.id AS product_id,
+            p.name AS product_name, 
+            p.price AS product_price,
+            p.description as product_desc,
+            p.img_url as product_img_url
+        FROM cart c
+        LEFT JOIN product p ON
+            c.product_id = p.id       
+        WHERE mahasiswa_nim = $1
+    """,
+        nim,
+    )
 
     carts = []
     for cart in carts_db:
@@ -71,28 +70,27 @@ async def get_all_student_carts(nim: int):
 
 @cart_router.get("/{nim}/cart/{cart_id}", response_model=GetStudentCartResponse)
 async def get_student_cart(nim: int, cart_id: int):
-    async with DBSession() as db:
-        cart_db = await db.fetchrow(
-            """
-            SELECT 
-                c.id AS cart_id,
-                c.quantity,
-                c.size,
-                c.information,
-                c.mahasiswa_nim,
-                p.id AS product_id,
-                p.name AS product_name, 
-                p.price AS product_price,
-                p.description as product_desc,
-                p.img_url as product_img_url
-            FROM cart c
-            LEFT JOIN product p ON
-                c.product_id = p.id
-            WHERE mahasiswa_nim = $1 AND c.id = $2
-            """,
-            nim,
-            cart_id,
-        )
+    cart_db = await db.pool.fetchrow(
+        """
+        SELECT 
+            c.id AS cart_id,
+            c.quantity,
+            c.size,
+            c.information,
+            c.mahasiswa_nim,
+            p.id AS product_id,
+            p.name AS product_name, 
+            p.price AS product_price,
+            p.description as product_desc,
+            p.img_url as product_img_url
+        FROM cart c
+        LEFT JOIN product p ON
+            c.product_id = p.id
+        WHERE mahasiswa_nim = $1 AND c.id = $2
+        """,
+        nim,
+        cart_id,
+    )
 
     if not cart_db:
         return GetStudentCartResponse(
@@ -129,32 +127,31 @@ async def add_student_cart(
     size: Literal["xs", "s", "m", "l", "xl", "xxl"],
     information: str = None,
 ):
-    async with DBSession() as db:
-        student = await db.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
-        if not student:
-            return Response(
-                success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
-            )
-
-        product = await db.fetchrow("SELECT * FROM product WHERE id = $1", product_id)
-        if not product:
-            return Response(
-                success=False, message=f"Product dengan id {product_id} tidak ditemukan"
-            )
-
-        await db.execute(
-            """
-            INSERT INTO cart 
-                (mahasiswa_nim, product_id, quantity, size, information)
-            VALUES
-                ($1, $2, $3, $4, $5)
-            """,
-            nim,
-            product_id,
-            quantity,
-            size,
-            information,
+    student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
+    if not student:
+        return Response(
+            success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
         )
+
+    product = await db.pool.fetchrow("SELECT * FROM product WHERE id = $1", product_id)
+    if not product:
+        return Response(
+            success=False, message=f"Product dengan id {product_id} tidak ditemukan"
+        )
+
+    await db.pool.execute(
+        """
+        INSERT INTO cart 
+            (mahasiswa_nim, product_id, quantity, size, information)
+        VALUES
+            ($1, $2, $3, $4, $5)
+        """,
+        nim,
+        product_id,
+        quantity,
+        size,
+        information,
+    )
 
     return Response(success=True, message="Berhasil menambahkan cart baru")
 
@@ -167,51 +164,49 @@ async def update_student_cart(
     size: Optional[Literal["xs", "s", "m", "l", "xl", "xxl"]] = None,
     information: Optional[str] = None,
 ):
-    async with DBSession() as db:
-        student = await db.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
-        if not student:
-            return Response(
-                success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
-            )
-
-        cart = await db.fetchrow("SELECT * FROM cart WHERE id = $1", cart_id)
-        if not cart:
-            return Response(
-                success=False, message=f"Cart dengan id {cart_id} tidak ditemukan"
-            )
-
-        await db.execute(
-            """
-            UPDATE cart SET
-                quantity = COALESCE($1, quantity),
-                size = COALESCE($2, size),
-                information = COALESCE($3, information)
-            WHERE id = $4
-            """,
-            quantity,
-            size,
-            information,
-            cart_id,
+    student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
+    if not student:
+        return Response(
+            success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
         )
+
+    cart = await db.pool.fetchrow("SELECT * FROM cart WHERE id = $1", cart_id)
+    if not cart:
+        return Response(
+            success=False, message=f"Cart dengan id {cart_id} tidak ditemukan"
+        )
+
+    await db.pool.execute(
+        """
+        UPDATE cart SET
+            quantity = COALESCE($1, quantity),
+            size = COALESCE($2, size),
+            information = COALESCE($3, information)
+        WHERE id = $4
+        """,
+        quantity,
+        size,
+        information,
+        cart_id,
+    )
 
     return Response(success=True, message=f"Berhasil menyunting cart {cart_id}")
 
 
 @cart_router.delete("/{nim}/cart/{cart_id}", response_model=Response)
 async def delete_student_cart(nim: int, cart_id: int):
-    async with DBSession() as db:
-        student = await db.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
-        if not student:
-            return Response(
-                success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
-            )
+    student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
+    if not student:
+        return Response(
+            success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
+        )
 
-        cart = await db.fetchrow("SELECT * FROM cart WHERE id = $1", cart_id)
-        if not cart:
-            return Response(
-                success=False, message=f"Cart dengan id {cart_id} tidak ditemukan"
-            )
+    cart = await db.pool.fetchrow("SELECT * FROM cart WHERE id = $1", cart_id)
+    if not cart:
+        return Response(
+            success=False, message=f"Cart dengan id {cart_id} tidak ditemukan"
+        )
 
-        await db.execute("DELETE FROM cart WHERE id = $1", cart_id)
+    await db.pool.execute("DELETE FROM cart WHERE id = $1", cart_id)
 
     return Response(success=True, message=f"Berhasil menghapus cart {cart_id}")

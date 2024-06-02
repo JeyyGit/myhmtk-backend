@@ -24,25 +24,37 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 snap_api = midtransclient.Snap(
     is_production=False,
     server_key=os.getenv("MIDTRANS_SERVER_KEY"),
-    client_key=os.getenv("MIDTRANS_CLIENT_KEY")
+    client_key=os.getenv("MIDTRANS_CLIENT_KEY"),
 )
 
 
-class DBSession:
-    def __init__(self):
-        self.db = None
+# class DBSession:
+#     def __init__(self):
+#         self.db = None
 
-    async def __aenter__(self) -> asyncpg.Pool:
-        self.db = await asyncpg.create_pool(
+#     async def __aenter__(self) -> asyncpg.Pool:
+#         self.db = await asyncpg.create_pool(
+#             host=os.getenv("DBHOST"),
+#             database=os.getenv("DBNAME"),
+#             user=os.getenv("DBUSER"),
+#             password=os.getenv("DBPASS"),
+#         )
+#         return self.db
+
+#     async def __aexit__(self, exc_type, exc_val, exc_tb):
+#         await self.db.close()
+
+
+class Database:
+    async def create_pool(self):
+        self.pool = await asyncpg.create_pool(
             host=os.getenv("DBHOST"),
             database=os.getenv("DBNAME"),
             user=os.getenv("DBUSER"),
             password=os.getenv("DBPASS"),
         )
-        return self.db
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.db.close()
+db = Database()
 
 
 class MyHMTKMiddleware(BaseHTTPMiddleware):
@@ -121,6 +133,5 @@ async def create_transaction(payload):
         snap_url = snap_api.create_transaction_redirect_url(payload)
         return snap_url
     except Exception as e:
-        print('midtrans error', e)
+        print("midtrans error", e)
         raise HTTPException(status_code=500, detail=f"Midtrans Error: {e}")
-

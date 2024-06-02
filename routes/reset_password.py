@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Form
 from fastapi.templating import Jinja2Templates
 
 from model import Response
-from util import DBSession, hash_str
+from util import db, hash_str
 
 import datetime as dt
 
@@ -13,25 +13,24 @@ templates = Jinja2Templates("./templates")
 
 @reset_pw_router.get("")
 async def reset_pw_page(request: Request, token: str):
-    async with DBSession() as db:
-        token_data = await db.fetchrow(
-            "SELECT * FROM tokens LEFT JOIN mahasiswa ON tokens.mahasiswa_nim = mahasiswa.nim WHERE token = $1",
-            token,
+    token_data = await db.pool.fetchrow(
+        "SELECT * FROM tokens LEFT JOIN mahasiswa ON tokens.mahasiswa_nim = mahasiswa.nim WHERE token = $1",
+        token,
+    )
+
+    if not token_data:
+        status = "Token is Invalid"
+    elif token_data["exp"] < dt.datetime.now():
+        await db.pool.execute("DELETE FROM tokens WHERE token = $1", token)
+
+        status = "Token is Expired"
+    else:
+        status = "valid"
+        token_data = dict(token_data)
+        names = token_data["name"].split()
+        token_data["name"] = " ".join(
+            [name[:2] + "*" * (len(name) - 2) for name in names]
         )
-
-        if not token_data:
-            status = "Token is Invalid"
-        elif token_data["exp"] < dt.datetime.now():
-            await db.execute("DELETE FROM tokens WHERE token = $1", token)
-
-            status = "Token is Expired"
-        else:
-            status = "valid"
-            token_data = dict(token_data)
-            names = token_data["name"].split()
-            token_data["name"] = " ".join(
-                [name[:2] + "*" * (len(name) - 2) for name in names]
-            )
 
     return templates.TemplateResponse(
         "reset_pw.html", {"request": request, "status": status, "data": token_data}
@@ -40,32 +39,31 @@ async def reset_pw_page(request: Request, token: str):
 
 @reset_pw_router.post("")
 async def reset_pw_page(request: Request, token: str, password: str = Form(...)):
-    async with DBSession() as db:
-        token_data = await db.fetchrow(
-            "SELECT * FROM tokens LEFT JOIN mahasiswa ON tokens.mahasiswa_nim = mahasiswa.nim WHERE token = $1",
+    token_data = await db.pool.fetchrow(
+        "SELECT * FROM tokens LEFT JOIN mahasiswa ON tokens.mahasiswa_nim = mahasiswa.nim WHERE token = $1",
+        token,
+    )
+
+    if not token_data:
+        status = "Token is Invalid"
+    elif token_data["exp"] < dt.datetime.now():
+        await db.pool.execute("DELETE FROM tokens WHERE token = $1", token)
+
+        status = "Token is Expired"
+    else:
+        await db.pool.execute(
+            "DELETE FROM tokens WHERE token = $1 OR mahasiswa_nim = $2",
             token,
+            token_data["nim"],
         )
+        status = "Password changed"
+        pass_hash = hash_str(password)
 
-        if not token_data:
-            status = "Token is Invalid"
-        elif token_data["exp"] < dt.datetime.now():
-            await db.execute("DELETE FROM tokens WHERE token = $1", token)
-
-            status = "Token is Expired"
-        else:
-            await db.execute(
-                "DELETE FROM tokens WHERE token = $1 OR mahasiswa_nim = $2",
-                token,
-                token_data["nim"],
-            )
-            status = "Password changed"
-            pass_hash = hash_str(password)
-
-            await db.execute(
-                "UPDATE mahasiswa SET pass_hash = $1 WHERE nim = $2",
-                pass_hash,
-                token_data["nim"],
-            )
+        await db.pool.execute(
+            "UPDATE mahasiswa SET pass_hash = $1 WHERE nim = $2",
+            pass_hash,
+            token_data["nim"],
+        )
 
     return templates.TemplateResponse(
         "reset_pw.html", {"request": request, "status": status, "data": None}, 303
