@@ -54,6 +54,7 @@ class Database:
             password=os.getenv("DBPASS"),
         )
 
+
 db = Database()
 
 
@@ -86,8 +87,17 @@ class MyHMTKMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
     def need_auth(self, path):
+        print(path)
         if any(
-            path.startswith(x) for x in ["/docs", "/openapi.json", "/reset_password"]
+            path.startswith(x)
+            for x in [
+                "/docs",
+                "/openapi.json",
+                "/reset_password",
+                "/transaction/midtrans_callback",
+                "/transaction/success",
+                "/transaction/pending",
+            ]
         ):
             return False
         else:

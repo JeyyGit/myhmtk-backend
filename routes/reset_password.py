@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request, Form
 from fastapi.templating import Jinja2Templates
 
-from model import Response
 from util import db, hash_str
 
 import datetime as dt

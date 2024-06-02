@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import RedirectResponse
 
 from typing import List, Optional
 import datetime as dt
@@ -106,7 +107,9 @@ async def get_all_student_transactions(nim: int):
     )
 
 
-@transaction_router.get("/{nim}/transactions/{transaction_id}", response_model=GetTransactionResponse)
+@transaction_router.get(
+    "/{nim}/transactions/{transaction_id}", response_model=GetTransactionResponse
+)
 async def get_student_transaction(nim: int, transaction_id: int):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
@@ -189,7 +192,7 @@ async def get_student_transaction(nim: int, transaction_id: int):
     )
 
 
-@transaction_router.post("/{nim}/transactions", response_model=Response)
+@transaction_router.post("/{nim}/transactions", response_model=AddTransactionResponse)
 async def add_student_transaction(nim: int, cart_ids: List[int]):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
@@ -317,7 +320,7 @@ async def add_student_transaction(nim: int, cart_ids: List[int]):
 
 @transaction_router.put("/{nim}/transactions/{transaction_id}", response_model=Response)
 async def update_student_transaction(
-    nim: int, transaction_id: int, paid: Optional[bool], completed: Optional[bool]
+    nim: int, transaction_id: int, paid: Optional[bool] = None, completed: Optional[bool] = None
 ):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
@@ -326,7 +329,7 @@ async def update_student_transaction(
         )
 
     transaction = await db.pool.fetchrow(
-        "SELECT * FROM transactions WHERE id = $1", transaction_id
+        "SELECT * FROM transaction WHERE id = $1", transaction_id
     )
     if not transaction:
         return Response(
@@ -341,15 +344,9 @@ async def update_student_transaction(
         transaction_id,
     )
 
-    return Response(success=True, message=f'Berhasil menyunting transaksi {transaction_id}')
-
-
-@transaction_router.get("/midtrans_callback")
-async def midtrans_callback(order_id: int, status_code: int, transaction_status: str):
-    if transaction_status in ["settlement", "capture"]:
-        await db.pool.execute(
-            "UPDATE transaction SET paid = true WHERE id = $1", order_id
-        )
+    return Response(
+        success=True, message=f"Berhasil menyunting transaksi {transaction_id}"
+    )
 
 
 # can not delete a transaction
