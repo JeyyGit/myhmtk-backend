@@ -2,8 +2,6 @@ import midtransclient
 import smtplib
 import asyncpg
 import hashlib
-import asyncpg
-import aiohttp
 import jwt
 import os
 from dotenv import load_dotenv
@@ -123,5 +121,6 @@ async def create_transaction(payload):
         snap_url = snap_api.create_transaction_redirect_url(payload)
         return snap_url
     except Exception as e:
+        print('midtrans error', e)
         raise HTTPException(status_code=500, detail=f"Midtrans Error: {e}")
 

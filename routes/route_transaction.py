@@ -222,8 +222,6 @@ async def add_student_transaction(nim: int, cart_ids: List[int]):
             cart_ids,
         )
 
-        total_price = sum(cart["quantity"] * cart["price"] for cart in cart_details)
-
         transaction_id = await db.fetchval(
             """
             INSERT INTO transaction (
@@ -238,23 +236,39 @@ async def add_student_transaction(nim: int, cart_ids: List[int]):
             nim,
             dt.datetime.now(pytz.timezone("Asia/Jakarta")).replace(tzinfo=None),
         )
+
+        item_details = [
+            {
+                "id": cart["product_id"],
+                "price": cart["price"],
+                "name": cart["name"],
+                "quantity": cart["quantity"],
+                "merchant_name": "MyHMTK",
+                "url": cart["img_url"],
+            }
+            for cart in cart_details
+        ]
+
+        # add tax
+        item_details.append(
+            {
+                "id": 0,
+                "price": 5000,
+                "name": "Biaya Admin",
+                "quantity": 1,
+                "merchant_name": "MyHMTK",
+            }
+        )
+
+        total_price = sum(item["quantity"] * item["price"] for item in item_details)
+
         midtrans_payload = {
             "transaction_details": {
                 "order_id": str(transaction_id),
                 "gross_amount": total_price,
             },
             "payment_type": "qris",
-            "item_details": [
-                {
-                    "id": cart["product_id"],
-                    "price": cart["price"],
-                    "name": cart["name"],
-                    "quantity": cart["quantity"],
-                    "merchant_name": "MyHMTK",
-                    "url": cart["img_url"],
-                }
-                for cart in cart_details
-            ],
+            "item_details": item_details,
             "customer_detalils": {
                 "first_name": student["name"].split()[0],
                 "last_name": student["name"].split()[-1],
