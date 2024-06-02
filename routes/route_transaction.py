@@ -39,6 +39,7 @@ async def get_all_student_transactions(nim: int):
             t.paid,
             t.completed,
             t.payment_url,
+            t.status,
             o.id AS order_id,
             o.product_id,
             o.quantity,
@@ -70,6 +71,7 @@ async def get_all_student_transactions(nim: int):
                 "paid": row["paid"],
                 "completed": row["completed"],
                 "payment_url": row["payment_url"],
+                "status": row["status"],
                 "orders": [],
             }
 
@@ -88,6 +90,24 @@ async def get_all_student_transactions(nim: int):
         }
         transactions_dict[transaction_id]["orders"].append(order)
 
+    trans_data = []
+    ids_need_to_change = []
+    for trans_data in transactions_dict.values():
+        if trans_data["status"] == "pending" and trans_data[
+            "transaction_date"
+        ] + dt.timedelta(minutes=5) <= dt.datetime.now(
+            pytz.timezone("Asia/Jakarta")
+        ).replace(
+            tzinfo=None
+        ):
+            trans_data["status"] = "expire"
+            ids_need_to_change.append((trans_data["transaction_id"],))
+
+    if ids_need_to_change:
+        await db.pool.executemany(
+            "UPDATE transaction SET status = 'expire' WHERE id = $1", ids_need_to_change
+        )
+
     transactions = [
         Transaction(
             id=trans_data["transaction_id"],
@@ -96,6 +116,7 @@ async def get_all_student_transactions(nim: int):
             paid=trans_data["paid"],
             completed=trans_data["completed"],
             payment_url=trans_data["payment_url"],
+            status=trans_data["status"],
         )
         for trans_data in transactions_dict.values()
     ]
@@ -126,6 +147,7 @@ async def get_student_transaction(nim: int, transaction_id: int):
             t.paid,
             t.completed,
             t.payment_url,
+            t.status,
             o.id AS order_id,
             o.product_id,
             o.quantity,
@@ -156,6 +178,7 @@ async def get_student_transaction(nim: int, transaction_id: int):
         "paid": transaction_db[0]["paid"],
         "completed": transaction_db[0]["completed"],
         "payment_url": transaction_db[0]["payment_url"],
+        "status": transaction_db[0]["status"],
         "orders": [],
     }
 
@@ -183,6 +206,7 @@ async def get_student_transaction(nim: int, transaction_id: int):
         paid=transaction_data["paid"],
         completed=transaction_data["completed"],
         payment_url=transaction_data["payment_url"],
+        status=transaction_data["status"],
     )
 
     return GetTransactionResponse(
@@ -229,9 +253,10 @@ async def add_student_transaction(nim: int, cart_ids: List[int]):
             mahasiswa_nim,
             transaction_date,
             paid,
-            completed
+            completed,
+            status
         )
-        VALUES ($1, $2, false, false)
+        VALUES ($1, $2, false, false, 'pending')
         RETURNING id
         """,
         nim,
@@ -277,7 +302,8 @@ async def add_student_transaction(nim: int, cart_ids: List[int]):
             "phone": str(student["tel"]),
             # "address"
         },
-        "page_expiry": {"duration": 3, "unit": "hours"},
+        "page_expiry": {"duration": 5, "unit": "minutes"},
+        "expiry": {"duration": 5, "unit": "minutes"},
         # "enabled_payments": ["credit_card", "gopay", "shopeepay", "other_qris"],
     }
 
@@ -287,7 +313,11 @@ async def add_student_transaction(nim: int, cart_ids: List[int]):
         await db.pool.execute("DELETE FROM transaction WHERE id = $1", transaction_id)
         return HTTPException(status_code=400, detail=str(e))
 
-    await db.pool.execute("UPDATE transaction SET payment_url = $1", redirect_url)
+    await db.pool.execute(
+        "UPDATE transaction SET payment_url = $1 WHERE id = $2",
+        redirect_url,
+        transaction_id,
+    )
 
     await db.pool.executemany(
         """
@@ -320,7 +350,11 @@ async def add_student_transaction(nim: int, cart_ids: List[int]):
 
 @transaction_router.put("/{nim}/transactions/{transaction_id}", response_model=Response)
 async def update_student_transaction(
-    nim: int, transaction_id: int, paid: Optional[bool] = None, completed: Optional[bool] = None
+    nim: int,
+    transaction_id: int,
+    paid: Optional[bool] = None,
+    completed: Optional[bool] = None,
+    status: Optional[str] = None,
 ):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
@@ -338,9 +372,10 @@ async def update_student_transaction(
         )
 
     await db.pool.execute(
-        "UPDATE transaction SET paid = COALESCE($1, paid), completed = COALESCE($2, completed) WHERE id = $3",
+        "UPDATE transaction SET paid = COALESCE($1, paid), completed = COALESCE($2, completed), status = COALESCE($3, status) WHERE id = $4",
         paid,
         completed,
+        status,
         transaction_id,
     )
 

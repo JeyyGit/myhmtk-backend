@@ -260,6 +260,7 @@ class Transaction(BaseModel):
     paid: bool
     completed: bool
     payment_url: str
+    status: str
 
 class GetAllTransactionResponse(BaseModel):
     success: bool

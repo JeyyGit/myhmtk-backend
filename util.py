@@ -97,6 +97,7 @@ class MyHMTKMiddleware(BaseHTTPMiddleware):
                 "/transaction/midtrans_callback",
                 "/transaction/success",
                 "/transaction/pending",
+                "/transaction/midtrans_notification",
             ]
         ):
             return False
@@ -112,7 +113,15 @@ def encode_jwt(payload):
     return jwt.encode(payload, SECRET, algorithm="HS256")
 
 
-# def generate_token()
+def verify_signature(order_id, status_code, gross_amount, signature):
+    return (
+        hashlib.sha512(
+            (
+                order_id + status_code + gross_amount + os.getenv("MIDTRANS_SERVER_KEY")
+            ).encode()
+        ).hexdigest()
+        == signature
+    )
 
 
 def send_email(email, name, token):
@@ -141,6 +150,7 @@ You can ignore this email if this isn't you.
 async def create_transaction(payload):
     try:
         snap_url = snap_api.create_transaction_redirect_url(payload)
+        print(f'{snap_url=}')
         return snap_url
     except Exception as e:
         print("midtrans error", e)
