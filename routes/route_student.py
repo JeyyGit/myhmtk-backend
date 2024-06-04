@@ -40,7 +40,15 @@ async def get_student(nim: int):
 
 
 @student_router.post("", response_model=Response)
-async def add_student(nim: int, name: str, tel: int, email: str, password: str):
+async def add_student(
+    nim: int,
+    name: str,
+    tel: int,
+    email: str,
+    avatar_url: str,
+    address: str,
+    password: str,
+):
     pass_hash = hash_str(password)
     try:
         await db.pool.execute(
@@ -65,6 +73,8 @@ async def update_student(
     name: Optional[str] = None,
     tel: Optional[int] = None,
     email: Optional[str] = None,
+    avatar_url: Optional[str] = None,
+    address: Optional[str] = None,
     password: Optional[str] = None,
 ):
     if password:
@@ -79,11 +89,13 @@ async def update_student(
         )
 
     await db.pool.execute(
-        "UPDATE mahasiswa SET name = COALESCE($1, name), tel = COALESCE($2, tel), email = COALESCE($3, email), pass_hash = COALESCE($4, pass_hash) WHERE nim = $5",
+        "UPDATE mahasiswa SET name = COALESCE($1, name), tel = COALESCE($2, tel), email = COALESCE($3, email), pass_hash = COALESCE($4, pass_hash), avatar_url = COALESCE($5, avatar_url), address = COALESCE($6, address) WHERE nim = $7",
         name,
         tel,
         email,
         pass_hash,
+        avatar_url,
+        address,
         nim,
     )
 
