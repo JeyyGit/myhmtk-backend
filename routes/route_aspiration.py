@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 
+from typing import Optional
 import datetime as dt
+import pytz
 
 from model import Response, GetAllAspirationResponse, Aspiration, Student
 from util import db
@@ -9,10 +11,19 @@ aspiration_router = APIRouter(prefix="/aspiration", tags=["Aspiration"])
 
 
 @aspiration_router.get("", response_model=GetAllAspirationResponse)
-async def get_all_aspirations():
-    aspirations_db = await db.pool.fetch(
-        "SELECT * FROM aspiration asp LEFT JOIN mahasiswa ma ON asp.mahasiswa_nim = ma.nim ORDER BY asp.id"
-    )
+async def get_all_aspirations(mahasiswa_nim: Optional[int] = None):
+    if mahasiswa_nim:
+        student = await db.pool.fetchrow(
+            "SELECT * FROM mahasiswa WHERE nim = $1", mahasiswa_nim
+        )
+        aspirations_db = await db.pool.fetch(
+            "SELECT * FROM aspiration asp LEFT JOIN mahasiswa ma ON asp.mahasiswa_nim = ma.nim WHERE ma.nim = $1 ORDER BY asp.id",
+            mahasiswa_nim,
+        )
+    else:
+        aspirations_db = await db.pool.fetch(
+            "SELECT * FROM aspiration asp LEFT JOIN mahasiswa ma ON asp.mahasiswa_nim = ma.nim ORDER BY asp.id"
+        )
 
     aspirations = []
     for aspiration in aspirations_db:
@@ -27,7 +38,7 @@ async def get_all_aspirations():
             Aspiration(
                 id=aspiration["id"],
                 mahasiswa=student,
-                post_date=aspiration["post_date"],
+                datetime=aspiration["datetime"],
                 title=aspiration["title"],
                 content=aspiration["content"],
             )
@@ -42,7 +53,7 @@ async def get_all_aspirations():
 
 @aspiration_router.post("", response_model=Response)
 async def add_aspiration(mahasiswa_nim: int, title: str, content: str):
-    post_date = dt.datetime.now()
+    post_date = dt.datetime.now(pytz.timezone('Asia/Jakarta')).replace(tzinfo=None)
 
     student = await db.pool.fetchrow(
         "SELECT * FROM mahasiswa WHERE nim = $1", mahasiswa_nim
@@ -54,11 +65,11 @@ async def add_aspiration(mahasiswa_nim: int, title: str, content: str):
         )
 
     await db.pool.execute(
-        "INSERT INTO aspiration(mahasiswa_nim, post_date, title, content) VALUES ($1, $2, $3, $4)",
+        "INSERT INTO aspiration(mahasiswa_nim, datetime, title, content) VALUES ($1, $2, $3, $4)",
         mahasiswa_nim,
         post_date,
         title,
         content,
-        )
+    )
 
     return Response(success=True, message="Berhasil menambahkan aspirasi baru")

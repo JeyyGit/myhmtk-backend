@@ -65,7 +65,7 @@ class AuthResponse(BaseModel):
 class Aspiration(BaseModel):
     id: int
     mahasiswa: Student
-    post_date: dt.datetime
+    datetime: dt.datetime
     title: str
     content: str
 
