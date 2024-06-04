@@ -14,6 +14,8 @@ class Student(BaseModel):
     name: str
     tel: int
     email: str
+    avatar_url: str
+    address: str
     pass_hash: str
 
 

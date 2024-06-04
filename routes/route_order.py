@@ -68,6 +68,8 @@ async def get_all_orders(nim: int = None):
                 m.name as mhs_name,
                 m.tel as mhs_tel,
                 m.email as mhs_email,
+                m.avatar_url as mhs_avatar_url,
+                m.address as mhs_address,
                 m.pass_hash as mhs_pass_hash
             FROM "order" o
             LEFT JOIN product p ON
@@ -91,6 +93,8 @@ async def get_all_orders(nim: int = None):
             name=order["mhs_name"],
             tel=order["mhs_tel"],
             email=order["mhs_email"],
+            avatar_url=order["mhs_avtar_url"],
+            address=order["mhs_address"],
             pass_hash=order["mhs_pass_hash"],
         )
         orders.append(
@@ -130,6 +134,8 @@ async def get_order(order_id: int):
             m.name as mhs_name,
             m.tel as mhs_tel,
             m.email as mhs_email,
+            m.avatar_url as mhs_avatar_url,
+            m.address as mhs_address,
             m.pass_hash as mhs_pass_hash
         FROM "order" o
         LEFT JOIN product p ON
@@ -158,6 +164,8 @@ async def get_order(order_id: int):
         name=order_db["mhs_name"],
         tel=order_db["mhs_tel"],
         email=order_db["mhs_email"],
+        avatar_url=order_db["mhs_avatar_url"],
+        address=order_db["mhs_address"],
         pass_hash=order_db["mhs_pass_hash"],
     )
 

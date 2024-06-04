@@ -34,6 +34,8 @@ async def get_all_posts():
             mahasiswa.name AS mahasiswa_name,
             mahasiswa.tel AS mahasiswa_tel,
             mahasiswa.email AS mahasiswa_email,
+            mahasiswa.avatar_url AS mahasiswa_avatar_url,
+            mahasiswa.address AS mahasiswa_address,
             mahasiswa.pass_hash AS mahasiswa_pass_hash
         FROM post
         LEFT JOIN mahasiswa ON post.poster_id = mahasiswa.nim AND post.poster_type = 'mahasiswa'
@@ -48,6 +50,8 @@ async def get_all_posts():
             name=post["mahasiswa_name"],
             tel=post["mahasiswa_tel"],
             email=post["mahasiswa_email"],
+            avatar_url=post["mahasiswa_avatar_url"],
+            address=post["mahasiswa_address"],
             pass_hash=post["mahasiswa_pass_hash"],
         )
 
@@ -82,6 +86,8 @@ async def get_post(post_id: int):
             mahasiswa.name AS mahasiswa_name,
             mahasiswa.tel AS mahasiswa_tel,
             mahasiswa.email AS mahasiswa_email,
+            mahasiswa.avatar_url AS mahasiswa_avatar_url,
+            mahasiswa.address AS mahasiswa_address,
             mahasiswa.pass_hash AS mahasiswa_pass_hash
         FROM post
         LEFT JOIN mahasiswa ON post.poster_id = mahasiswa.nim AND post.poster_type = 'mahasiswa'
@@ -103,6 +109,8 @@ async def get_post(post_id: int):
         name=post["mahasiswa_name"],
         tel=post["mahasiswa_tel"],
         email=post["mahasiswa_email"],
+        avatar_url=post["mahasiswa_avatar_url"],
+        address=post["mahasiswa_address"],
         pass_hash=post["mahasiswa_pass_hash"],
     )
 

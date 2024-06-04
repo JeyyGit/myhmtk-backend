@@ -11,11 +11,8 @@ from model import (
     GetAllTransactionResponse,
     GetTransactionResponse,
     Response,
-    Cart,
     Order,
     Transaction,
-    Product,
-    Student,
 )
 
 

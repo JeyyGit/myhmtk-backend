@@ -33,6 +33,8 @@ async def get_all_aspirations(mahasiswa_nim: Optional[int] = None):
             tel=aspiration["tel"],
             email=aspiration["email"],
             pass_hash=aspiration["pass_hash"],
+            avatar_url=aspiration["avatar_url"],
+            address=aspiration["address"]
         )
         aspirations.append(
             Aspiration(
