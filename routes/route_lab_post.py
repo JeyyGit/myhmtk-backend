@@ -14,9 +14,9 @@ lab_post_router = APIRouter(prefix="/lab_post", tags=["Lab Post"])
 @lab_post_router.get("", response_model=GetAllLabPostResponse)
 async def get_all_lab_posts(lab: Optional[Literal["magics", "sea", "rnest", "security", "evconn", "ismile"]] = None):
     if not lab:
-        lab_posts_db = await db.pool.fetch("SELECT * FROM lab_post ORDER BY post_date")
+        lab_posts_db = await db.pool.fetch("SELECT * FROM lab_post ORDER BY post_date DESC")
     else:
-        lab_posts_db = await db.pool.fetch("SELECT * FROM lab_post WHERE lab = $1 ORDER BY post_date", lab)
+        lab_posts_db = await db.pool.fetch("SELECT * FROM lab_post WHERE lab = $1 ORDER BY post_date DESC", lab)
 
     lab_posts = []
     for lab_post in lab_posts_db:

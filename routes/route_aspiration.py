@@ -17,12 +17,12 @@ async def get_all_aspirations(mahasiswa_nim: Optional[int] = None):
             "SELECT * FROM mahasiswa WHERE nim = $1", mahasiswa_nim
         )
         aspirations_db = await db.pool.fetch(
-            "SELECT * FROM aspiration asp LEFT JOIN mahasiswa ma ON asp.mahasiswa_nim = ma.nim WHERE ma.nim = $1 ORDER BY asp.id",
+            "SELECT * FROM aspiration asp LEFT JOIN mahasiswa ma ON asp.mahasiswa_nim = ma.nim WHERE ma.nim = $1 ORDER BY datetime DESC",
             mahasiswa_nim,
         )
     else:
         aspirations_db = await db.pool.fetch(
-            "SELECT * FROM aspiration asp LEFT JOIN mahasiswa ma ON asp.mahasiswa_nim = ma.nim ORDER BY asp.id"
+            "SELECT * FROM aspiration asp LEFT JOIN mahasiswa ma ON asp.mahasiswa_nim = ma.nim ORDER BY datetime DESC"
         )
 
     aspirations = []
