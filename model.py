@@ -187,6 +187,27 @@ class GetCommentResponse(BaseModel):
     comment: Optional[Comment]
 
 
+# Activity
+class Activity(BaseModel):
+    id: int
+    post_date: dt.datetime
+    title: str
+    content: str
+    img_url: str
+
+
+class GetAllActivitiesResponse(BaseModel):
+    success: bool
+    message: str
+    activities: List[Activity]
+
+
+class GetActivityResponse(BaseModel):
+    success: bool
+    message: str
+    activity: Optional[Activity]
+
+
 # Product
 class Product(BaseModel):
     id: int
@@ -264,15 +285,18 @@ class Transaction(BaseModel):
     payment_url: str
     status: str
 
+
 class GetAllTransactionResponse(BaseModel):
     success: bool
     message: str
     transactions: List[Transaction]
 
+
 class GetTransactionResponse(BaseModel):
     success: bool
     message: str
     transaction: Optional[Transaction]
+
 
 class AddTransactionResponse(BaseModel):
     success: bool

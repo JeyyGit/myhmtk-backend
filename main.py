@@ -16,6 +16,7 @@ from routes.route_academic_resource import academic_resource_router
 from routes.route_product import product_router
 from routes.reset_password import reset_pw_router
 from routes.route_midtrans import midtrans_router
+from routes.route_activity import activity_router
 
 from util import bearer_scheme, MyHMTKMiddleware, db
 
@@ -51,15 +52,16 @@ async def root():
 app.include_router(auth_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(admin_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(student_router, dependencies=[Depends(bearer_scheme)])
-app.include_router(cart_router, dependencies=[Depends(bearer_scheme)])
-app.include_router(transaction_router, dependencies=[Depends(bearer_scheme)])
-app.include_router(order_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(post_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(lab_post_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(aspiration_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(fun_tk_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(academic_resource_router, dependencies=[Depends(bearer_scheme)])
+app.include_router(activity_router, dependencies=[Depends(bearer_scheme)])
 app.include_router(product_router, dependencies=[Depends(bearer_scheme)])
+app.include_router(cart_router, dependencies=[Depends(bearer_scheme)])
+app.include_router(transaction_router, dependencies=[Depends(bearer_scheme)])
+app.include_router(order_router, dependencies=[Depends(bearer_scheme)])
 
 app.include_router(midtrans_router)
 app.include_router(reset_pw_router)
