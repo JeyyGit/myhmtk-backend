@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from util import db, hash_str
 
 import datetime as dt
-
+import pytz
 
 reset_pw_router = APIRouter(prefix="/reset_password", include_in_schema=False)
 templates = Jinja2Templates("./templates")
@@ -19,7 +19,7 @@ async def reset_pw_page(request: Request, token: str):
 
     if not token_data:
         status = "Token is Invalid"
-    elif token_data["exp"] < dt.datetime.now():
+    elif token_data["exp"] < dt.datetime.now(pytz.timezone("Asia/Jakarta")):
         await db.pool.execute("DELETE FROM tokens WHERE token = $1", token)
 
         status = "Token is Expired"
@@ -45,7 +45,7 @@ async def reset_pw_page(request: Request, token: str, password: str = Form(...))
 
     if not token_data:
         status = "Token is Invalid"
-    elif token_data["exp"] < dt.datetime.now():
+    elif token_data["exp"] < dt.datetime.now(pytz.timezone("Asia/Jakarta")):
         await db.pool.execute("DELETE FROM tokens WHERE token = $1", token)
 
         status = "Token is Expired"
