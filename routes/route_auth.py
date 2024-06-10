@@ -62,7 +62,7 @@ async def reset_password(request: Request, email: str):
     token = secrets.token_urlsafe(32)
     send_email(email, student["name"], token)
 
-    exp = dt.datetime.now(pytz.timezone("Asia/Jakarta")) + dt.timedelta(hours=1)
+    exp = dt.datetime.now(pytz.timezone("Asia/Jakarta")).replace(tzinfo=None) + dt.timedelta(hours=1)
 
     await db.pool.execute(
         "INSERT INTO tokens (mahasiswa_nim, exp, token) VALUES ($1, $2, $3)",

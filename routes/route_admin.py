@@ -85,11 +85,6 @@ async def delete_admin(admin_id: int):
             success=False, message=f"Admin dengan id {admin_id} tidak ditemukan"
         )
 
-    await db.pool.execute(
-        "DELETE FROM post WHERE poster_id = $1 AND poster_type = $2",
-        admin_id,
-        "admin",
-    )
     await db.pool.execute("DELETE FROM admin WHERE id = $1", admin_id)
 
     return Response(success=True, message=f"Berhasil menghapus admin {admin_id}")

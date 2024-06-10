@@ -9,21 +9,143 @@ from util import create_transaction, db
 from model import (
     AddTransactionResponse,
     GetAllTransactionResponse,
-    GetTransactionResponse,
+    GetAllStudentTransactionResponse,
+    GetStudentTransactionResponse,
     Response,
+    Student,
     Order,
     Transaction,
+    StudentTransaction,
 )
 
 
 transaction_router = APIRouter(prefix="/student", tags=["Transaction"])
 
 
-@transaction_router.get("/{nim}/transactions", response_model=GetAllTransactionResponse)
+@transaction_router.get(
+    "/{nim}/transactions_all", response_model=GetAllTransactionResponse
+)
+async def get_all_transactions(nim: int):
+    transactions_db = await db.pool.fetch(
+        """
+        SELECT
+            t.id AS transaction_id,
+            t.transaction_date,
+            t.paid,
+            t.completed,
+            t.payment_url,
+            t.status,
+            o.id AS order_id,
+            o.product_id,
+            o.quantity,
+            o.size,
+            o.information,
+            p.name AS product_name,
+            p.price AS product_price,
+            p.description AS product_description,
+            p.img_url AS product_img_url,
+            m.nim AS mahasiswa_nim,
+            m.name AS mahasiswa_name,
+            m.tel AS mahasiswa_tel,
+            m.email AS mahasiswa_email,
+            m.address AS mahasiswa_address,
+            m.avatar_url AS mahasiswa_avatar_url,
+            m.pass_hash AS mahasiswa_pass_hash
+        FROM
+            transaction t
+            JOIN "order" o ON t.id = o.transaction_id
+            JOIN product p ON o.product_id = p.id
+            JOIN mahasiswa m ON t.mahasiswa_nim = m.nim
+        ORDER BY transaction_date DESC
+    """
+    )
+
+    transactions_dict = {}
+    for row in transactions_db:
+        transaction_id = row["transaction_id"]
+
+        if transaction_id not in transactions_dict:
+            transactions_dict[transaction_id] = {
+                "mahasiswa": {
+                    "nim": row["mahasiswa_nim"],
+                    "name": row["mahasiswa_name"],
+                    "tel": row["mahasiswa_tel"],
+                    "email": row["mahasiswa_email"],
+                    "address": row["mahasiswa_address"],
+                    "avatar_url": row["mahasiswa_avatar_url"],
+                    "pass_hash": row["mahasiswa_pass_hash"],
+                },
+                "transaction_id": transaction_id,
+                "transaction_date": row["transaction_date"],
+                "paid": row["paid"],
+                "completed": row["completed"],
+                "payment_url": row["payment_url"],
+                "status": row["status"],
+                "orders": [],
+            }
+
+        order = {
+            "id": row["order_id"],
+            "product": {
+                "id": row["product_id"],
+                "name": row["product_name"],
+                "price": row["product_price"],
+                "description": row["product_description"],
+                "img_url": row["product_img_url"],
+            },
+            "quantity": row["quantity"],
+            "size": row["size"],
+            "information": row["information"],
+        }
+        transactions_dict[transaction_id]["orders"].append(order)
+
+    trans_data = []
+    ids_need_to_change = []
+    for trans_data in transactions_dict.values():
+        if trans_data["status"] == "pending" and trans_data[
+            "transaction_date"
+        ] + dt.timedelta(minutes=5) <= dt.datetime.now(
+            pytz.timezone("Asia/Jakarta")
+        ).replace(
+            tzinfo=None
+        ):
+            trans_data["status"] = "expire"
+            ids_need_to_change.append((trans_data["transaction_id"],))
+
+    if ids_need_to_change:
+        await db.pool.executemany(
+            "UPDATE transaction SET status = 'expire' WHERE id = $1", ids_need_to_change
+        )
+
+    transactions = []
+    for trans_data in transactions_dict.values():
+        transactions.append(
+            Transaction(
+                id=trans_data["transaction_id"],
+                student=Student(**trans_data["mahasiswa"]),
+                orders=[Order(**order_data) for order_data in trans_data["orders"]],
+                transaction_date=trans_data["transaction_date"],
+                paid=trans_data["paid"],
+                completed=trans_data["completed"],
+                payment_url=trans_data["payment_url"],
+                status=trans_data["status"],
+            )
+        )
+
+    return GetAllTransactionResponse(
+        success=True,
+        message="Berhasil mengambil semua transaksi mahasiswa",
+        transactions=transactions,
+    )
+
+
+@transaction_router.get(
+    "/{nim}/transactions", response_model=GetAllStudentTransactionResponse
+)
 async def get_all_student_transactions(nim: int):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
-        return GetAllTransactionResponse(
+        return GetAllStudentTransactionResponse(
             success=False,
             message=f"Mahasiswa dengan nim {nim} tidak ditemukan",
             transactions=[],
@@ -106,7 +228,7 @@ async def get_all_student_transactions(nim: int):
         )
 
     transactions = [
-        Transaction(
+        StudentTransaction(
             id=trans_data["transaction_id"],
             orders=[Order(**order_data) for order_data in trans_data["orders"]],
             transaction_date=trans_data["transaction_date"],
@@ -118,7 +240,7 @@ async def get_all_student_transactions(nim: int):
         for trans_data in transactions_dict.values()
     ]
 
-    return GetAllTransactionResponse(
+    return GetAllStudentTransactionResponse(
         success=True,
         message=f"Berhasil mengambil semua transaksi mahasiswa nim {nim}",
         transactions=transactions,
@@ -126,12 +248,12 @@ async def get_all_student_transactions(nim: int):
 
 
 @transaction_router.get(
-    "/{nim}/transactions/{transaction_id}", response_model=GetTransactionResponse
+    "/{nim}/transactions/{transaction_id}", response_model=GetStudentTransactionResponse
 )
 async def get_student_transaction(nim: int, transaction_id: int):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
-        return GetAllTransactionResponse(
+        return GetStudentTransactionResponse(
             success=False,
             message=f"Mahasiswa dengan nim {nim} tidak ditemukan",
             transactions=[],
@@ -165,7 +287,7 @@ async def get_student_transaction(nim: int, transaction_id: int):
     )
 
     if not transaction_db:
-        return GetTransactionResponse(
+        return GetStudentTransactionResponse(
             success=False, message=f"Transaksi id {transaction_id} tidak ditemukan"
         )
 
@@ -206,7 +328,7 @@ async def get_student_transaction(nim: int, transaction_id: int):
         status=transaction_data["status"],
     )
 
-    return GetTransactionResponse(
+    return GetStudentTransactionResponse(
         success=True,
         message=f"Berhasl mendapatkan data transaksi {transaction_id}",
         transaction=transaction,

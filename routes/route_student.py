@@ -45,18 +45,20 @@ async def add_student(
     name: str,
     tel: int,
     email: str,
-    avatar_url: str,
-    address: str,
     password: str,
+    avatar_url: Optional[str] = None,
+    address: Optional[str] = None,
 ):
     pass_hash = hash_str(password)
     try:
         await db.pool.execute(
-            "INSERT INTO mahasiswa(nim, name, tel, email, pass_hash) VALUES ($1, $2, $3, $4, $5)",
+            "INSERT INTO mahasiswa(nim, name, tel, email, avatar_url, address, pass_hash) VALUES ($1, $2, $3, $4, $5, $6, $7)",
             nim,
             name,
             tel,
             email,
+            avatar_url or "https://cdn.jeyy.xyz/image/default_avatar_b0e451.png",
+            address or "-",
             pass_hash,
         )
     except UniqueViolationError:

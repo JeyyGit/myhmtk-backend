@@ -85,7 +85,9 @@ class Post(BaseModel):
     post_date: dt.datetime
     img_url: Optional[str]
     content: str
+    current_like_count: int
     can_comment: bool
+    is_liked: Optional[bool]
 
 
 class GetAllPostResponse(BaseModel):
@@ -169,8 +171,8 @@ class GetAcademicResourceResponse(BaseModel):
 # Comment
 class Comment(BaseModel):
     id: int
-    commenter: Union[Admin, Student]
-    commenter_type: Literal["mahasiswa", "admin"]
+    post_id: int
+    commenter: Student
     comment_date: dt.datetime
     content: str
 
@@ -178,7 +180,7 @@ class Comment(BaseModel):
 class GetAllCommentResponse(BaseModel):
     success: bool
     message: str
-    comments: Optional[List[Comment]]
+    comments: List[Comment]
 
 
 class GetCommentResponse(BaseModel):
@@ -277,6 +279,21 @@ class GetOrderResponse(BaseModel):
 # Transaction
 class Transaction(BaseModel):
     id: int
+    student: Student
+    orders: List[Order]
+    transaction_date: dt.datetime
+    paid: bool
+    completed: bool
+    payment_url: str
+    status: str
+
+class GetAllTransactionResponse(BaseModel):
+    success: bool
+    message: str
+    transactions: List[Transaction]
+
+class StudentTransaction(BaseModel):
+    id: int
     # mahasiswa: Student
     orders: List[Order]
     transaction_date: dt.datetime
@@ -285,17 +302,16 @@ class Transaction(BaseModel):
     payment_url: str
     status: str
 
-
-class GetAllTransactionResponse(BaseModel):
+class GetAllStudentTransactionResponse(BaseModel):
     success: bool
     message: str
-    transactions: List[Transaction]
+    transactions: List[StudentTransaction]
 
 
-class GetTransactionResponse(BaseModel):
+class GetStudentTransactionResponse(BaseModel):
     success: bool
     message: str
-    transaction: Optional[Transaction]
+    transaction: Optional[StudentTransaction]
 
 
 class AddTransactionResponse(BaseModel):

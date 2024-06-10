@@ -19,7 +19,7 @@ async def reset_pw_page(request: Request, token: str):
 
     if not token_data:
         status = "Token is Invalid"
-    elif token_data["exp"] < dt.datetime.now(pytz.timezone("Asia/Jakarta")):
+    elif token_data["exp"] < dt.datetime.now(pytz.timezone("Asia/Jakarta")).replace(tzinfo=None):
         await db.pool.execute("DELETE FROM tokens WHERE token = $1", token)
 
         status = "Token is Expired"
@@ -45,7 +45,7 @@ async def reset_pw_page(request: Request, token: str, password: str = Form(...))
 
     if not token_data:
         status = "Token is Invalid"
-    elif token_data["exp"] < dt.datetime.now(pytz.timezone("Asia/Jakarta")):
+    elif token_data["exp"] < dt.datetime.now(pytz.timezone("Asia/Jakarta")).replace(tzinfo=None):
         await db.pool.execute("DELETE FROM tokens WHERE token = $1", token)
 
         status = "Token is Expired"
