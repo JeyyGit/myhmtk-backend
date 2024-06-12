@@ -93,7 +93,7 @@ async def update_lab_post(
         )
 
     await db.pool.execute(
-        "UPDATE lab_post SET content = COALESCE($1, content), img_url = COALESCE($2, content) WHERE id = $3",
+        "UPDATE lab_post SET content = COALESCE($1, content), img_url = COALESCE($2, img_url) WHERE id = $3",
         content,
         img_url,
         lab_post_id,
