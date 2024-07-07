@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from typing import Optional
 
@@ -23,12 +23,8 @@ async def get_all_admin():
 async def get_admin(admin_id: int):
     admin = await db.pool.fetchrow("SELECT * FROM admin WHERE id = $1", admin_id)
     if not admin:
-        return GetAdminResponse(
-            success=False,
-            message=f"Admin dengan id {admin_id} tidak ditemukan",
-            admin=None,
-        )
-
+        raise HTTPException(404, f"Admin dengan id {admin_id} tidak ditemukan")
+    
     return GetAdminResponse(
         success=True, message="Berhasil mengambil data admin", admin=admin
     )
@@ -60,11 +56,9 @@ async def update_admin(
     else:
         pass_hash = None
     
-    student = await db.pool.fetchrow("SELECT * FROM admin WHERE id = $1", admin_id)
-    if not student:
-        return Response(
-            success=False, message=f"Admin dengan id {admin_id} tidak ditemukan"
-        )
+    admin = await db.pool.fetchrow("SELECT * FROM admin WHERE id = $1", admin_id)
+    if not admin:
+        raise HTTPException(404, f"Admin dengan id {admin_id} tidak ditemukan")
 
     await db.pool.execute(
         "UPDATE admin SET name = COALESCE($1, name), email = COALESCE($2, email), pass_hash = COALESCE($3, pass_hash) WHERE id = $4",
@@ -81,9 +75,7 @@ async def update_admin(
 async def delete_admin(admin_id: int):
     admin = await db.pool.fetchrow("SELECT * FROM admin WHERE id = $1", admin_id)
     if not admin:
-        return Response(
-            success=False, message=f"Admin dengan id {admin_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Admin dengan id {admin_id} tidak ditemukan")
 
     await db.pool.execute("DELETE FROM admin WHERE id = $1", admin_id)
 

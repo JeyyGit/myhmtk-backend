@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from model import (
     Response,
@@ -17,9 +17,7 @@ cart_router = APIRouter(prefix="/student", tags=["Cart"])
 async def get_all_student_carts(nim: int):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
-        return GetAllStudentCartResponse(
-            success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Mahasiswa dengan nim {nim} tidak ditemukan")
 
     carts_db = await db.pool.fetch(
         """
@@ -93,9 +91,9 @@ async def get_student_cart(nim: int, cart_id: int):
     )
 
     if not cart_db:
-        return GetStudentCartResponse(
-            success=False,
-            message=f"Mahasiswa dengan nim {nim} atau cart dengan id {cart_id} tidak ditemukan",
+        return HTTPException(
+            404,
+            f"Mahasiswa dengan nim {nim} atau cart dengan id {cart_id} tidak ditemukan",
         )
 
     product = Product(
@@ -129,15 +127,11 @@ async def add_student_cart(
 ):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
-        return Response(
-            success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Mahasiswa dengan nim {nim} tidak ditemukan")
 
     product = await db.pool.fetchrow("SELECT * FROM product WHERE id = $1", product_id)
     if not product:
-        return Response(
-            success=False, message=f"Product dengan id {product_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Product dengan id {product_id} tidak ditemukan")
 
     await db.pool.execute(
         """
@@ -166,15 +160,11 @@ async def update_student_cart(
 ):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
-        return Response(
-            success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Mahasiswa dengan nim {nim} tidak ditemukan")
 
     cart = await db.pool.fetchrow("SELECT * FROM cart WHERE id = $1", cart_id)
     if not cart:
-        return Response(
-            success=False, message=f"Cart dengan id {cart_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Cart dengan id {cart_id} tidak ditemukan")
 
     await db.pool.execute(
         """
@@ -197,15 +187,11 @@ async def update_student_cart(
 async def delete_student_cart(nim: int, cart_id: int):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
-        return Response(
-            success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Mahasiswa dengan nim {nim} tidak ditemukan")
 
     cart = await db.pool.fetchrow("SELECT * FROM cart WHERE id = $1", cart_id)
     if not cart:
-        return Response(
-            success=False, message=f"Cart dengan id {cart_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Cart dengan id {cart_id} tidak ditemukan")
 
     await db.pool.execute("DELETE FROM cart WHERE id = $1", cart_id)
 

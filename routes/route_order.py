@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from typing import Optional, Literal
 import datetime as dt
@@ -22,9 +22,8 @@ async def get_all_orders(nim: int = None):
     if nim:
         student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
         if not student:
-            return GetAllOrderResponse(
-                success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
-            )
+            raise HTTPException(404, f"Mahasiswa dengan nim {nim} tidak ditemukan")
+        
         orders_db = await db.pool.fetch(
             """
             SELECT
@@ -93,7 +92,7 @@ async def get_all_orders(nim: int = None):
             name=order["mhs_name"],
             tel=order["mhs_tel"],
             email=order["mhs_email"],
-            avatar_url=order["mhs_avtar_url"],
+            avatar_url=order["mhs_avatar_url"],
             address=order["mhs_address"],
             pass_hash=order["mhs_pass_hash"],
         )
@@ -148,9 +147,7 @@ async def get_order(order_id: int):
     )
 
     if not order_db:
-        return GetOrderResponse(
-            success=False, message=f"Order dengan id {order_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Order dengan id {order_id} tidak ditemukan")
 
     product = Product(
         id=order_db["product_id"],
@@ -196,15 +193,11 @@ async def add_order(
 ):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
-        return Response(
-            success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Mahasiswa dengan nim {nim} tidak ditemukan")
 
     product = await db.pool.fetchrow("SELECT * FROM product WHERE id = $1", product_id)
     if not product:
-        return Response(
-            success=False, message=f"Product dengan id {product_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Product dengan id {product_id} tidak ditemukan")
 
     await db.pool.execute(
         """

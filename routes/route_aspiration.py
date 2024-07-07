@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from typing import Optional
 import datetime as dt
@@ -61,10 +61,7 @@ async def add_aspiration(mahasiswa_nim: int, title: str, content: str):
         "SELECT * FROM mahasiswa WHERE nim = $1", mahasiswa_nim
     )
     if not student:
-        return Response(
-            success=False,
-            message=f"Mahasiswa dengan nim {mahasiswa_nim} tidak ditemukan",
-        )
+        raise HTTPException(404, f"Mahasiswa dengan nim {mahasiswa_nim} tidak ditemukan")
 
     await db.pool.execute(
         "INSERT INTO aspiration(mahasiswa_nim, datetime, title, content) VALUES ($1, $2, $3, $4)",

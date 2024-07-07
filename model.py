@@ -26,6 +26,7 @@ class GetAllStudentResponse(BaseModel):
 
 
 class GetStudentResponse(BaseModel):
+    status_code: int = 200
     success: bool
     message: str
     mahasiswa: Optional[Student]

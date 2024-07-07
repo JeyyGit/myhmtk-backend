@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from asyncpg.exceptions import ForeignKeyViolationError
 
 from typing import Optional
@@ -12,7 +12,7 @@ activity_router = APIRouter(prefix="/activity", tags=["Activity"])
 
 @activity_router.get("", response_model=GetAllActivitiesResponse)
 async def get_all_activity():
-    acitivity_db  = await db.pool.fetch("SELECT * FROM activity order by post_date DESC")
+    acitivity_db  = await db.pool.fetch("SELECT * FROM activity order by post_date")
 
     acitivities = []
     for activity in acitivity_db:
@@ -36,11 +36,7 @@ async def get_activity(activity_id: int):
     activity = await db.pool.fetchrow("SELECT * FROM activity WHERE id = $1", activity_id)
 
     if not activity:
-        return GetActivityResponse(
-            success=False,
-            message=f"Activity dengan id {activity_id} tidak ditemukan",
-            activity=None,
-        )
+        raise HTTPException(404, f"Activity dengan id {activity_id} tidak ditemukan")
 
     activity_obj = Activity(
         id=activity["id"],
@@ -82,10 +78,7 @@ async def update_activity(
 ):
     activity = await db.pool.fetchrow("SELECT * FROM activity WHERE id = $1", activity_id)
     if not activity:
-        return Response(
-            success=False,
-            message=f"Activity dengan id {activity_id} tidak ditemukan",
-        )
+        raise HTTPException(404, f"Activity dengan id {activity_id} tidak ditemukan")
 
     await db.pool.execute(
         """
@@ -109,9 +102,7 @@ async def update_activity(
 async def delete_activity(activity_id: int):
     activity = await db.pool.fetchrow("SELECT * FROM activity WHERE id = $1", activity_id)
     if not activity:
-        return Response(
-            success=False, message=f"Activity dengan id {activity_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Activity dengan id {activity_id} tidak ditemukan")
 
     await db.pool.execute("DELETE FROM activity WHERE id = $1", activity_id)
 

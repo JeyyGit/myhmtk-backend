@@ -145,11 +145,8 @@ async def get_all_transactions(nim: int):
 async def get_all_student_transactions(nim: int):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
-        return GetAllStudentTransactionResponse(
-            success=False,
-            message=f"Mahasiswa dengan nim {nim} tidak ditemukan",
-            transactions=[],
-        )
+        raise HTTPException(404, f"Mahasiswa dengan nim {nim} tidak ditemukan")
+
     transactions_db = await db.pool.fetch(
         """
         SELECT
@@ -253,11 +250,8 @@ async def get_all_student_transactions(nim: int):
 async def get_student_transaction(nim: int, transaction_id: int):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
-        return GetStudentTransactionResponse(
-            success=False,
-            message=f"Mahasiswa dengan nim {nim} tidak ditemukan",
-            transactions=[],
-        )
+        raise HTTPException(404, f"Mahasiswa dengan nim {nim} tidak ditemukan")
+
     transaction_db = await db.pool.fetch(
         """
         SELECT
@@ -287,8 +281,8 @@ async def get_student_transaction(nim: int, transaction_id: int):
     )
 
     if not transaction_db:
-        return GetStudentTransactionResponse(
-            success=False, message=f"Transaksi id {transaction_id} tidak ditemukan"
+        return HTTPException(
+            404, f"Transaksi dengan id {transaction_id} tidak ditemukan"
         )
 
     transaction_data = {
@@ -319,7 +313,7 @@ async def get_student_transaction(nim: int, transaction_id: int):
 
     transaction = Transaction(
         id=transaction_data["transaction_id"],
-        # mahasiswa=student,
+        student=Student(**student),
         orders=[Order(**order_data) for order_data in transaction_data["orders"]],
         transaction_date=transaction_data["transaction_date"],
         paid=transaction_data["paid"],
@@ -339,11 +333,7 @@ async def get_student_transaction(nim: int, transaction_id: int):
 async def add_student_transaction(nim: int, cart_ids: List[int]):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
-        return AddTransactionResponse(
-            success=False,
-            message=f"Mahasiswa dengan nim {nim} tidak ditemukan",
-            redirect_url=None,
-        )
+        raise HTTPException(404, f"Mahasiswa dengan nim {nim} tidak ditemukan")
 
     cart_details = await db.pool.fetch(
         """
@@ -477,17 +467,14 @@ async def update_student_transaction(
 ):
     student = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", nim)
     if not student:
-        return Response(
-            success=False, message=f"Mahasiswa dengan nim {nim} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Mahasiswa dengan nim {nim} tidak ditemukan")
 
     transaction = await db.pool.fetchrow(
         "SELECT * FROM transaction WHERE id = $1", transaction_id
     )
     if not transaction:
-        return Response(
-            success=False,
-            message=f"Transaksi dengan id {transaction_id} tidak ditemukan",
+        return HTTPException(
+            404, f"Transaksi dengan id {transaction_id} tidak ditemukan"
         )
 
     await db.pool.execute(

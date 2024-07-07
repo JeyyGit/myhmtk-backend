@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from typing import Optional
 
@@ -37,11 +37,7 @@ async def get_product(product_id: int):
     )
 
     if not product_db:
-        return GetProductResponse(
-            success=False,
-            message=f"Product dengan id {product_id} tidak ditemukan",
-            product=None,
-        )
+        raise HTTPException(404, f"Product dengan id {product_id} tidak ditemukan")
 
     product = Product(
         id=product_id,
@@ -87,9 +83,7 @@ async def update_product(
     )
 
     if not product_db:
-        return Response(
-            success=False, message=f"Product dengan id {product_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Product dengan id {product_id} tidak ditemukan")
 
     await db.pool.execute(
         """
@@ -119,9 +113,7 @@ async def delete_product(product_id: int):
     )
 
     if not product_db:
-        return Response(
-            success=False, message=f"Product dengan id {product_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Product dengan id {product_id} tidak ditemukan")
 
     await db.pool.execute("DELETE FROM product WHERE id = $1", product_id)
 

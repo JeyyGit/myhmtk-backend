@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from typing import Literal, Optional
 import datetime as dt
@@ -155,6 +155,7 @@ async def get_post(post_id: int, user_id: Optional[int] = None):
             FROM post
             LEFT JOIN mahasiswa ON post.poster_id = mahasiswa.nim
             LEFT JOIN "like" ON post.id = "like".post_id
+            WHERE post.id = $1
             GROUP BY
                 post.id,
                 mahasiswa.name,
@@ -164,7 +165,6 @@ async def get_post(post_id: int, user_id: Optional[int] = None):
                 mahasiswa.address,
                 mahasiswa.pass_hash
             ORDER BY post.post_date DESC
-            WHERE post.id = $1
         """,
             post_id,
         )
@@ -193,6 +193,7 @@ async def get_post(post_id: int, user_id: Optional[int] = None):
             FROM post
             LEFT JOIN mahasiswa ON post.poster_id = mahasiswa.nim
             LEFT JOIN "like" ON post.id = "like".post_id
+            WHERE post.id = $2
             GROUP BY
                 post.id,
                 mahasiswa.name,
@@ -202,18 +203,13 @@ async def get_post(post_id: int, user_id: Optional[int] = None):
                 mahasiswa.address,
                 mahasiswa.pass_hash
             ORDER BY post.post_date DESC
-            WHERE post.id = $2
         """,
             user_id,
             post_id,
         )
 
     if not post:
-        return GetPostResponse(
-            success=False,
-            message=f"Post dengan id {post_id} tidak ditemukan",
-            post=None,
-        )
+        raise HTTPException(404, f"Post dengan id {post_id} tidak ditemukan")
 
     poster = Student(
         nim=post["poster_id"],
@@ -262,10 +258,7 @@ async def add_post(
 ):
     poster = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", poster_id)
     if not poster:
-        return Response(
-            success=False,
-            message=f"Mahasiswa dengan nim {poster_id} tidak ditemukan",
-        )
+        raise HTTPException(404, f"Mahasiswa dengan nim {poster_id} tidak ditemukan")
 
     await db.pool.execute(
         """
@@ -293,9 +286,7 @@ async def update_post(
 ):
     post = await db.pool.fetchrow("SELECT * FROM post WHERE id = $1", post_id)
     if not post:
-        return Response(
-            success=False, message=f"Post dengan id {post_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Post dengan id {post_id} tidak ditemukan")
 
     await db.pool.execute(
         "UPDATE post SET img_url = COALESCE($1, img_url), content = COALESCE($2, content), can_comment = COALESCE($3, can_comment) WHERE id = $4",
@@ -312,9 +303,7 @@ async def update_post(
 async def delete_post(post_id: int):
     post = await db.pool.fetchrow("SELECT * FROM post WHERE id = $1", post_id)
     if not post:
-        return Response(
-            success=False, message=f"Post dengan id {post_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Post dengan id {post_id} tidak ditemukan")
 
     await db.pool.execute("DELETE FROM post WHERE id = $1", post_id)
 
@@ -326,16 +315,11 @@ async def delete_post(post_id: int):
 async def toggle_post_like(post_id: int, user_id: int):
     post = await db.pool.fetchrow("SELECT * FROM post WHERE id = $1", post_id)
     if not post:
-        return Response(
-            success=False,
-            message=f"Post dengan id {post_id} tidak ditemukan",
-        )
+        raise HTTPException(404, f"Post dengan id {post_id} tidak ditemukan")
+    
     user = await db.pool.fetchrow("SELECT * FROM mahasiswa WHERE nim = $1", user_id)
     if not user:
-        return Response(
-            success=False,
-            message=f"Mahasiswa dengan nim {user_id} tidak ditemukan",
-        )
+        raise HTTPException(404, f"Mahasiswa dengan nim {user_id} tidak ditemukan")
 
     like_exists = await db.pool.fetchval(
         'SELECT 1 FROM "like" WHERE post_id = $1 AND liker_id = $2', post_id, user_id
@@ -357,11 +341,7 @@ async def toggle_post_like(post_id: int, user_id: int):
 async def get_all_post_comments(post_id: int):
     post = await db.pool.fetchrow("SELECT * FROM post WHERE id = $1", post_id)
     if not post:
-        return GetAllCommentResponse(
-            success=False,
-            message=f"Post dengan id {post_id} tidak ditemukan",
-            comments=[],
-        )
+        raise HTTPException(404, f"Post dengan id {post_id} tidak ditemukan")
 
     comments_db = await db.pool.fetch(
         """
@@ -418,9 +398,7 @@ async def add_comment(
 ):
     post = await db.pool.fetchrow("SELECT * FROM post WHERE id = $1", post_id)
     if not post:
-        return GetAllCommentResponse(
-            success=False, message=f"Post dengan id {post_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Post dengan id {post_id} tidak ditemukan")
 
     await db.pool.execute(
         "INSERT INTO comment (post_id, commenter_id, comment_date, content) VALUES ($1, $2, $3, $4)",
@@ -437,15 +415,12 @@ async def add_comment(
 async def delete_comment(post_id: int, comment_id: int):
     post = await db.pool.fetchrow("SELECT * FROM post WHERE id = $1", post_id)
     if not post:
-        return Response(
-            success=False, message=f"Post dengan id {post_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Post dengan id {post_id} tidak ditemukan")
     
     comment = await db.pool.fetchrow("SELECT * FROM comment WHERE id = $1", comment_id)
     if not comment:
-        return Response(
-            success=False, message=f"Comment dengan id {comment_id} tidak ditemukan"
-        )
+        
+        raise HTTPException(404, f"Comment dengan id {comment_id} tidak ditemuka")
     
     await db.pool.execute("DELETE FROM comment WHERE id = $1", comment_id)
 

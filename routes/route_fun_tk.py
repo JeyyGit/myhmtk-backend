@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from asyncpg.exceptions import ForeignKeyViolationError
 
 from typing import Optional
@@ -12,7 +12,7 @@ fun_tk_router = APIRouter(prefix="/fun_tk", tags=["Fun TK"])
 
 @fun_tk_router.get("", response_model=GetAllFunTKResponse)
 async def get_all_fun_tk():
-    fun_tks_db = await db.pool.fetch("SELECT * FROM fun_tk order by \"date\" DESC")
+    fun_tks_db = await db.pool.fetch('SELECT * FROM fun_tk order by "date" DESC')
 
     fun_tks = []
     for fun_tk in fun_tks_db:
@@ -40,11 +40,7 @@ async def get_fun_tk(fun_tk_id: int):
     fun_tk = await db.pool.fetchrow("SELECT * FROM fun_tk WHERE id = $1", fun_tk_id)
 
     if not fun_tk:
-        return GetFunTKResponse(
-            success=False,
-            message=f"Fun TK dengan id {fun_tk_id} tidak ditemukan",
-            fun_tk=None,
-        )
+        raise HTTPException(404, f"Fun TK dengan id {fun_tk_id} tidak ditemukan")
 
     fun_tk_obj = FunTK(
         id=fun_tk["id"],
@@ -102,10 +98,7 @@ async def update_fun_tk(
 ):
     fun_tk = await db.pool.fetchrow("SELECT * FROM fun_tk WHERE id = $1", fun_tk_id)
     if not fun_tk:
-        return Response(
-            success=False,
-            message=f"Fun tk dengan id {fun_tk_id} tidak ditemukan",
-        )
+        raise HTTPException(404, f"Fun TK dengan id {fun_tk_id} tidak ditemukan")
 
     await db.pool.execute(
         """
@@ -137,9 +130,7 @@ async def update_fun_tk(
 async def delete_fun_tk(fun_tk_id: int):
     fun_tk = await db.pool.fetchrow("SELECT * FROM fun_tk WHERE id = $1", fun_tk_id)
     if not fun_tk:
-        return Response(
-            success=False, message=f"Fun tk dengan id {fun_tk_id} tidak ditemukan"
-        )
+        raise HTTPException(404, f"Fun TK dengan id {fun_tk_id} tidak ditemukan")
 
     await db.pool.execute("DELETE FROM fun_tk WHERE id = $1", fun_tk_id)
 

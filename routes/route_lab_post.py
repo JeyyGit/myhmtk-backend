@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from asyncpg.exceptions import ForeignKeyViolationError
 
 from typing import Literal, Optional
@@ -39,14 +39,10 @@ async def get_all_lab_posts(lab: Optional[Literal["magics", "sea", "rnest", "sec
 
 @lab_post_router.get("/{lab_post_id}", response_model=GetLabPostResponse)
 async def get_lab_post(lab_post_id: int):
-    lab_post = await db.pool.fetchrow("SELECT * FROM lab_post WHERE ", lab_post_id)
+    lab_post = await db.pool.fetchrow("SELECT * FROM lab_post WHERE id = $1", lab_post_id)
 
     if not lab_post:
-        return GetLabPostResponse(
-            success=False,
-            message=f"Lab post dengan id {lab_post_id} tidak ditemukan",
-            lab_post=None,
-        )
+        raise HTTPException(404, f"Lab post dengan id {lab_post_id} tidak ditemukan")
 
     lab_post_obj = LabPost(
         id=lab_post["id"],
@@ -87,10 +83,7 @@ async def update_lab_post(
         "SELECT * FROM lab_post WHERE id = $1", lab_post_id
     )
     if not lab_post:
-        return Response(
-            success=False,
-            message=f"Lab post dengan id {lab_post_id} tidak ditemukan",
-        )
+        raise HTTPException(404, f"Lab post dengan id {lab_post_id} tidak ditemukan")
 
     await db.pool.execute(
         "UPDATE lab_post SET content = COALESCE($1, content), img_url = COALESCE($2, img_url) WHERE id = $3",
@@ -108,10 +101,7 @@ async def delete_lab_post(lab_post_id: int):
         "SELECT * FROM lab_post WHERE id = $1", lab_post_id
     )
     if not lab_post:
-        return Response(
-            success=False,
-            message=f"Lab post dengan id {lab_post_id} tidak ditemukan",
-        )
+        raise HTTPException(404, f"Lab post dengan id {lab_post_id} tidak ditemukan")
 
     await db.pool.execute("DELETE FROM lab_post WHERE id = $1", lab_post_id)
 
